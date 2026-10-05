@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Summarizes the [MPB-HIT] lines that MPBalancer writes to the server log.
+
+Usage:
+  ssh aesten@7900x 'grep "\\[MPB-HIT\\]" ~/bannerlord/server.log' | python scripts/hit-stats.py
+  python scripts/hit-stats.py saved-log.txt
+
+The first number is what vanilla would have dealt (logs before vanilla tracking: the damage before
+the final-stage settings); "after" is the damage dealt. The reduction columns compare the two.
+"""
+import re
+import sys
+from collections import defaultdict
+
+FIELD = re.compile(r"(\w+)=(\S+)")
+SPEED_BUCKETS = [(0, 4), (4, 8), (8, 12), (12, 16), (16, 999)]
+
+
+def parse(lines):
+    for line in lines:
+        if "[MPB-HIT]" not in line:
+            continue
+        hit = dict(FIELD.findall(line.split("[MPB-HIT]", 1)[1]))
+        for key in ("speed", "bonus", "armor", "before", "after"):
+            hit[key] = float(hit[key])
+        # Newer logs include the true vanilla damage; older ones only the damage before the final-stage settings.
+        hit["base"] = float(hit["vanilla"]) if "vanilla" in hit else hit["before"]
+        yield hit
+
+
+def summarize(title, hits):
+    if not hits:
+        return
+    before = sum(h["base"] for h in hits)
+    after = sum(h["after"] for h in hits)
+    print("  %-34s %4d hits | avg %6.1f -> %6.1f | reduction %4.0f%% | max after %5.1f" % (
+        title, len(hits), before / len(hits), after / len(hits),
+        100 * (1 - after / before) if before else 0, max(h["after"] for h in hits)))
+
+
+def main():
+    source = open(sys.argv[1], encoding="utf-8", errors="replace") if len(sys.argv) > 1 else sys.stdin
+    hits = list(parse(source))
+    if not hits:
+        print("No [MPB-HIT] lines found.")
+        return
+
+    print("All hits by damage type / source / victim:")
+    groups = defaultdict(list)
+    for h in hits:
+        groups[(h["type"], h["src"], h["victim"])].append(h)
+    for key in sorted(groups):
+        summarize(" ".join(key), groups[key])
+
+    pierce = [h for h in hits if h["type"] == "pierce" and h["tgt"] != "shield" and h["src"] != "couch"]
+    if pierce:
+        print("\nPierce thrusts and missiles on players by relative speed (m/s) and body part:")
+        for low, high in SPEED_BUCKETS:
+            for target in ("body", "head"):
+                bucket = [h for h in pierce if h["victim"] == "human" and h["tgt"] == target and low <= h["speed"] < high]
+                summarize("%2d-%-3s %s" % (low, high if high < 999 else "+", target), bucket)
+
+        print("\nPierce thrusts and missiles on players by weapon:")
+        weapons = defaultdict(list)
+        for h in pierce:
+            if h["victim"] == "human":
+                weapons[h["weapon"]].append(h)
+        for weapon in sorted(weapons, key=lambda w: -len(weapons[w])):
+            summarize(weapon, weapons[weapon])
+
+    ridden = [h for h in hits if h.get("ahorse", "none") != "none" and "aspeed" in h]
+    if ridden:
+        print("\nAttacker's own speed by horse (m/s; logged since horse tracking was added):")
+        horses = defaultdict(list)
+        for h in ridden:
+            horses[h["ahorse"]].append(float(h["aspeed"]))
+        for horse in sorted(horses, key=lambda x: -max(horses[x])):
+            v = sorted(horses[horse])
+            print("  %-32s %4d hits | median %5.1f | 90th pct %5.1f | max %5.1f" % (
+                horse, len(v), v[len(v) // 2], v[int(len(v) * 0.9)], v[-1]))
+
+    couches = [h for h in hits if h["src"] == "couch" and h["tgt"] != "shield"]
+    if couches:
+        print("\nCouches and braces:")
+        for h in sorted(couches, key=lambda h: h["speed"]):
+            print("  %-6s %-5s %5.1f m/s | armor %3.0f | %6.1f -> %6.1f | %s" % (
+                h["victim"], h["tgt"], h["speed"], h["armor"], h["before"], h["after"], h["weapon"]))
+
+
+if __name__ == "__main__":
+    main()
