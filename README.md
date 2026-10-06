@@ -105,11 +105,11 @@ ssh aesten@7900x 'grep "\[MPB-HIT\]" ~/bannerlord/server.log' | python scripts/h
   - `ChatCommands.cs`, `HitDebug.cs`, `Speedometer.cs` — admin commands, hit log/readout, horse speedometer. `ServerTickBehavior.cs` sends their chat output on the mission tick. `VanillaEstimate.cs` — the vanilla damage shown in the hit log.
 - `module/SubModule.xml` — module definition, copied into `dist/` on build. `ModuleCategory="Server"` keeps the module from being advertised to clients; `DedicatedServerType="all"` loads it on any dedicated server type but never on a game client.
 - `docs/mod-damage.md` — how the mod processes a hit, where each setting applies, curves, expected damage. `docs/native-damage.md` — the vanilla damage calculation, horse speed and couching rules.
-- `scripts/` — `deploy.sh`, `server/run-server.sh`, `hit-stats.py`; `decompile-refs.sh` (client), `decompile-server.sh`, `copy-data.sh` regenerate `ref/` after a game update (they default to the Steam install paths and take a path argument).
-- `ref/` — generated reference material; regenerate it rather than editing it.
-  - `ref/DedicatedServerSource/` — decompiled Dedicated Server assemblies, including server-only ones. Prefer this tree for reading multiplayer code (the decompiler resolved its dependencies better).
-  - `ref/GameSource/` — decompiled client assemblies relevant to multiplayer (Campaign, SandBox, StoryMode and NavalDLC excluded).
-  - `ref/ModuleData/{Client,DedicatedServer}/{Native,Multiplayer}/` — XML/JSON/TXT data from both installs.
+- `scripts/` — `deploy.sh`, `server/run-server.sh`, `hit-stats.py`.
+- `../BannerlordDecompiled/` — the shared decompiled-source repo, a sibling of this one, with its own scripts to regenerate it after a game update (see its README).
+  - `DedicatedServerSource/` — decompiled Dedicated Server assemblies, including server-only ones. Prefer this tree for reading multiplayer code (the decompiler resolved its dependencies better).
+  - `GameSource/` — decompiled client assemblies (multiplayer and singleplayer).
+  - `ModuleData/{Client,DedicatedServer}/{Native,Multiplayer}/` — XML/JSON/TXT data from both installs.
 
 ## Findings
 

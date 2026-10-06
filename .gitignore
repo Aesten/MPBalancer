@@ -1,6 +1,5 @@
 dist/
 src/**/bin/
 src/**/obj/
-ref/
 *.user
 .vs/

@@ -1,6 +1,6 @@
 # How the game turns a hit into damage (vanilla multiplayer, v1.4.8)
 
-This describes the unmodified game: a melee or missile hit on an agent, from the engine's collision data to the health that gets removed, plus the native rules for horse speed and couching. It's based on the decompiled server code in `ref/DedicatedServerSource/`, which runs identically on clients. For what MPBalancer changes, see [mod-damage.md](mod-damage.md).
+This describes the unmodified game: a melee or missile hit on an agent, from the engine's collision data to the health that gets removed, plus the native rules for horse speed and couching. It's based on the decompiled server code in `../BannerlordDecompiled/DedicatedServerSource/`, which runs identically on clients. For what MPBalancer changes, see [mod-damage.md](mod-damage.md).
 
 ## Overview
 
