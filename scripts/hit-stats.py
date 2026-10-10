@@ -14,6 +14,9 @@ from collections import defaultdict
 
 FIELD = re.compile(r"(\w+)=(\S+)")
 SPEED_BUCKETS = [(0, 4), (4, 8), (8, 12), (12, 16), (16, 999)]
+# Body parts as logged in part= (the engine's hit body part). Logs before part= was added only had a
+# head/body split (tgt=) that lumped every non-head part together, so they're left out of the per-part tables.
+PARTS = ["head", "neck", "chest", "abdomen", "shoulder", "arm", "legs"]
 
 
 def parse(lines):
@@ -24,6 +27,9 @@ def parse(lines):
         for key in ("speed", "bonus", "armor", "before", "after"):
             hit[key] = float(hit[key])
         # Newer logs include the true vanilla damage; older ones only the damage before the final-stage settings.
+        # Early part= logs had left_/right_ variants.
+        if "part" in hit:
+            hit["part"] = hit["part"].replace("left_", "").replace("right_", "")
         hit["base"] = float(hit["vanilla"]) if "vanilla" in hit else hit["before"]
         yield hit
 
@@ -52,13 +58,18 @@ def main():
     for key in sorted(groups):
         summarize(" ".join(key), groups[key])
 
-    pierce = [h for h in hits if h["type"] == "pierce" and h["tgt"] != "shield" and h["src"] != "couch"]
+    pierce = [h for h in hits if h["type"] == "pierce" and h.get("tgt") != "shield" and h["src"] != "couch"]
     if pierce:
-        print("\nPierce thrusts and missiles on players by relative speed (m/s) and body part:")
+        print("\nPierce thrusts and missiles on players by relative speed (m/s):")
         for low, high in SPEED_BUCKETS:
-            for target in ("body", "head"):
-                bucket = [h for h in pierce if h["victim"] == "human" and h["tgt"] == target and low <= h["speed"] < high]
-                summarize("%2d-%-3s %s" % (low, high if high < 999 else "+", target), bucket)
+            bucket = [h for h in pierce if h["victim"] == "human" and low <= h["speed"] < high]
+            summarize("%2d-%-3s" % (low, high if high < 999 else "+"), bucket)
+
+        print("\nPierce thrusts and missiles on players by body part and relative speed (m/s):")
+        for part in PARTS:
+            for low, high in SPEED_BUCKETS:
+                bucket = [h for h in pierce if h["victim"] == "human" and h.get("part") == part and low <= h["speed"] < high]
+                summarize("%-14s %2d-%-3s" % (part, low, high if high < 999 else "+"), bucket)
 
         print("\nPierce thrusts and missiles on players by weapon:")
         weapons = defaultdict(list)
@@ -79,12 +90,12 @@ def main():
             print("  %-32s %4d hits | median %5.1f | 90th pct %5.1f | max %5.1f" % (
                 horse, len(v), v[len(v) // 2], v[int(len(v) * 0.9)], v[-1]))
 
-    couches = [h for h in hits if h["src"] == "couch" and h["tgt"] != "shield"]
+    couches = [h for h in hits if h["src"] == "couch" and h.get("tgt") != "shield"]
     if couches:
         print("\nCouches and braces:")
         for h in sorted(couches, key=lambda h: h["speed"]):
-            print("  %-6s %-5s %5.1f m/s | armor %3.0f | %6.1f -> %6.1f | %s" % (
-                h["victim"], h["tgt"], h["speed"], h["armor"], h["before"], h["after"], h["weapon"]))
+            print("  %-6s %5.1f m/s | armor %3.0f | %6.1f -> %6.1f | %s" % (
+                h["victim"], h["speed"], h["armor"], h["before"], h["after"], h["weapon"]))
 
 
 if __name__ == "__main__":

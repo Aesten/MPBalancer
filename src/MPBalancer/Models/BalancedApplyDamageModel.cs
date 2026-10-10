@@ -15,6 +15,11 @@ public class BalancedApplyDamageModel : MultiplayerAgentApplyDamageModel
         float vanilla = before * VanillaEstimate.ConsumeRatio(in attackInformation, in collisionData);
         float damage = before;
 
+        if (collisionData.IsHorseCharge)
+        {
+            HorseCharge.Record(in attackInformation);
+        }
+
         // Shield hits are damage to the shield, not to the player.
         if (!collisionData.AttackBlockedWithShield && !attackInformation.IsVictimAgentNull)
         {
@@ -36,6 +41,18 @@ public class BalancedApplyDamageModel : MultiplayerAgentApplyDamageModel
 
         HitDebug.Report(in attackInformation, in collisionData, damageType, vanilla, before, damage);
         return damage;
+    }
+
+    // Bumps: the knock decisions run right after the damage, in Mission.ChargeDamageCallback; the knockdown one
+    // comes last, so it reports the bump (speed and outcome) for the readout and the log.
+    public override bool DecideAgentKnockedDownByBlow(Agent attackerAgent, Agent victimAgent, in AttackCollisionData collisionData, WeaponComponentData attackerWeapon, in Blow blow)
+    {
+        bool knockedDown = base.DecideAgentKnockedDownByBlow(attackerAgent, victimAgent, in collisionData, attackerWeapon, in blow);
+        if (collisionData.IsHorseCharge)
+        {
+            HorseCharge.Report(attackerAgent, victimAgent, in collisionData, (blow.BlowFlag & BlowFlags.KnockBack) != 0, knockedDown);
+        }
+        return knockedDown;
     }
 
     // Melee pierce thrusts: % of vanilla by relative speed (and, on players, by armor at the hit location),

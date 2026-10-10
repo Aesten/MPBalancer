@@ -26,27 +26,14 @@ This compiles against the local Dedicated Server install's DLLs (override the pa
 A Linux Dedicated Server reachable as `ssh aesten@7900x`. Its install is at `~/Steam/steamapps/common/Mount & Blade II Dedicated Server/`; the launch script, `token.txt` and logs are in `~/bannerlord/`.
 
 ```sh
-scripts/deploy.sh                              # build, install the module and run-server.sh on the server
+scripts/deploy.sh                              # build and install the module on the server
 scripts/deploy.sh --restart                    # ...then restart the server
 scripts/deploy.sh --restart -- --tickrate 60   # options after -- go to run-server.sh
 ```
 
 `deploy.sh` replaces the module folder as a whole over `ssh` + `tar` (no stale files, no `scp` path-quoting issues). Set `MPB_HOST` to deploy elsewhere. A running server keeps the build it started with until it's restarted.
 
-On the server, `~/bannerlord/run-server.sh` (source: `scripts/server/run-server.sh`):
-
-```sh
-./run-server.sh                  # start in screen session "bannerlord" and attach
-./run-server.sh -d               # start detached
-./run-server.sh --vanilla        # without MPBalancer, for A/B comparisons
-./run-server.sh --config x.txt   # config file in Modules/Native (default: config.txt)
-./run-server.sh --tickrate 60    # server tick rate in Hz (default: 240)
-./run-server.sh --stop           # stop the server and wait for it to exit
-```
-
-- It reads the auth token from `token.txt` and `cd`s into `bin/Linux64_Shipping_Server` before starting (that folder's name decides where module DLLs are loaded from).
-- Output goes to `~/bannerlord/server.log`; logs of earlier runs are moved to `~/bannerlord/logs/server-<time>.log` (20 kept). The server prints its full command line, auth token included, into its logs, so don't share them.
-- `--stop` sends SIGTERM: the server ignores SIGHUP, so closing the screen session alone leaves it running.
+The server is started by `~/bannerlord/run-server.sh`, which lives in and is deployed by the sibling mpManager repo (see its README). It loads MPBalancer unless given `--vanilla`.
 
 ## Tuning in-game
 
@@ -60,9 +47,12 @@ Admins (players who joined with the server's `AdminPassword`) can change setting
 !b weapon_mult mp_aserai_heavy_lance:0.85 mp_western_long_lance:1.1    set per-weapon multipliers (or none)
 !b reset                            restore the mod's defaults
 !b vanilla                          vanilla behaviour, for A/B comparisons
-!b debug                            toggle a readout of every hit you deal or take
-!b speedo                           toggle a once-per-second readout of your horse's speed, as the server measures it
+!b debug                            toggle a readout of every pierce hit you deal or take, and of bumps
+!b speedo                           toggle a once-per-second readout of your horse's speed and top speed, as the server measures them
+!b speedo stats                     print your current horse's item stats, server stats and bump threshold once
 ```
+
+With MPManager on the server, these commands are routed through it (`src/MPBalancer/MPManagerLink.cs`): they're hidden from chat, `/b` works too, MPManager's aliases and `!help` include them, and they work from the server console (`mpm cmd /b ...`). Without MPManager, MPBalancer hooks chat itself, as before.
 
 | Setting | Default | Vanilla | What it does |
 |---|---|---|---|
@@ -80,16 +70,22 @@ Admins (players who joined with the server's `AdminPassword`) can change setting
 | `couch_knee` / `couch_cap` | 0 / 200 | off | couch/brace curve; with knee 0 it's `200 × tanh(damage / 200)` |
 | `horse_speed` | 0.92 | 1 | multiplies horse top speed (applies to every horse immediately) |
 | `horse_knee` / `horse_cap` | 12.4 / 14.2 | off (1000) | horse top speeds (m/s) above the knee are compressed smoothly toward the cap; keep well above 9 (the couch minimum) |
+| `horse_maneuver` | 0.9 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
+| `horse_accel_time` | 1 | 1 | multiplies the horse's `TopSpeedReachDuration` stat; by its name higher = slower acceleration, check the `[MPB-ACCEL]` log lines |
+| `horse_turn_keep_speed` | 0.6 | 0.6 | native: how sharp a horse can turn before losing its speed |
+| `couch_min_speed` | 9 | 9 | native: minimum horse speed (m/s) to couch |
+| `bump_speed` | 4.8 | 4.3 | minimum relative speed (m/s) for a horse bump; the engine also needs a running gait (lowest seen 5.9 m/s), so this can only raise the bar. Applies to horses spawned after the change |
 
+- "native" settings override engine parameters (`native_parameters.xml`) on the server only, through the engine's `override_native_parameter`; clients keep their own values, so test for snapping. They're only sent to the engine once changed from vanilla.
 - The thrust, missile and couch settings act on the damage the victim actually takes (after armor, body part and perks). Shield hits aren't affected.
 - Changes are lost on restart; to keep a value, change its default in `src/MPBalancer/BalanceSettings.cs`. Every change is announced in chat and logged.
 - The command itself stays visible in chat: the hook (`ChatBox.OnMessageReceivedAtDedicatedServer`, the same one TaleWorlds' web panel uses) can see messages but not hide them. Commands work once the first mission has started (about 40 s after launch).
 
 ### Hit log and stats
 
-`!b debug` shows lines like `you -> Bob | pierce thrust, head | 9.4 m/s (+134%) | armor 12 | vanilla 96 -> 67`: the attacker/victim relative speed, the game's speed bonus, the armor at the hit location, and what the same hit would have done in vanilla.
+`!b debug` shows every pierce hit you deal or take (the other damage types stay vanilla, so they're only logged) in lines like `you -> Bob | pierce, neck | 9.4 m/s (+134%) | armor 12 | vanilla 96 -> 67`: the attacker/victim relative speed, the game's speed bonus, the armor at the hit location, and what the same hit would have done in vanilla.
 
-Every damaging hit is also logged to `server.log` as `[MPB-HIT] key=value ...` (damage type, source, target, speeds, armor, vanilla and dealt damage, weapon and its listed thrust damage, both horses), and `!b speedo` readings as `[MPB-SPEED]`. To summarize them:
+Every damaging hit is also logged to `server.log` as `[MPB-HIT] key=value ...` (only hits that damage a player or bot: damage type, source, body part hit, speeds, armor, vanilla and dealt damage, weapon and its listed thrust damage, both horses), bumps with their knock outcome as `[MPB-BUMP]`, and `!b speedo` readings as `[MPB-SPEED]` / `[MPB-ACCEL]`. To summarize them:
 
 ```sh
 ssh aesten@7900x 'grep "\[MPB-HIT\]" ~/bannerlord/server.log' | python scripts/hit-stats.py
@@ -105,7 +101,7 @@ ssh aesten@7900x 'grep "\[MPB-HIT\]" ~/bannerlord/server.log' | python scripts/h
   - `ChatCommands.cs`, `HitDebug.cs`, `Speedometer.cs` — admin commands, hit log/readout, horse speedometer. `ServerTickBehavior.cs` sends their chat output on the mission tick. `VanillaEstimate.cs` — the vanilla damage shown in the hit log.
 - `module/SubModule.xml` — module definition, copied into `dist/` on build. `ModuleCategory="Server"` keeps the module from being advertised to clients; `DedicatedServerType="all"` loads it on any dedicated server type but never on a game client.
 - `docs/mod-damage.md` — how the mod processes a hit, where each setting applies, curves, expected damage. `docs/native-damage.md` — the vanilla damage calculation, horse speed and couching rules.
-- `scripts/` — `deploy.sh`, `server/run-server.sh`, `hit-stats.py`.
+- `scripts/` — `deploy.sh`, `hit-stats.py`.
 - `../BannerlordDecompiled/` — the shared decompiled-source repo, a sibling of this one, with its own scripts to regenerate it after a game update (see its README).
   - `DedicatedServerSource/` — decompiled Dedicated Server assemblies, including server-only ones. Prefer this tree for reading multiplayer code (the decompiler resolved its dependencies better).
   - `GameSource/` — decompiled client assemblies (multiplayer and singleplayer).

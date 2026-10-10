@@ -48,10 +48,10 @@ internal static class Combat
         return horse?.SpawnEquipment?[EquipmentIndex.Horse].Item?.StringId ?? "none";
     }
 
-    private static Vec2 AttackerVelocity(in AttackInformation a) =>
+    public static Vec2 AttackerVelocity(in AttackInformation a) =>
         Velocity(a.DoesAttackerHaveMountAgent, a.AttackerAgentMovementVelocity, a.AttackerAgentMountMovementDirection, a.AttackerMovementDirectionAsAngle);
 
-    private static Vec2 VictimVelocity(in AttackInformation a) =>
+    public static Vec2 VictimVelocity(in AttackInformation a) =>
         Velocity(a.DoesVictimHaveMountAgent, a.VictimAgentMovementVelocity, a.VictimAgentMountMovementDirection, a.VictimMovementDirectionAsAngle);
 
     // Same as MissionCombatMechanicsHelper.GetAgentVelocityContribution (private there).

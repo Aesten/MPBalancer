@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using MPBalancer.Models;
 
 namespace MPBalancer;
 
@@ -29,8 +30,12 @@ public sealed class BalanceSetting : ISetting
     public float Max { get; }
     public float Value { get; set; }
 
-    public BalanceSetting(string name, string description, float defaultValue, float min, float max, float vanilla = 1f)
+    // Engine parameter this setting overrides (native_parameters.xml id), or null. See NativeParameters.
+    public string NativeParameter { get; }
+
+    public BalanceSetting(string name, string description, float defaultValue, float min, float max, float vanilla = 1f, string nativeParameter = null)
     {
+        NativeParameter = nativeParameter;
         Name = name;
         Description = description;
         Default = defaultValue;
@@ -292,16 +297,47 @@ public static class BalanceSettings
         "horse top speed (m/s) never exceeds this; keep well above 9, the minimum speed to hold a couched lance",
         14.2f, 0f, 1000f, vanilla: 1000f);
 
+    // Horse handling (BalancedAgentStatModel); changes apply to every horse immediately.
+    public static readonly BalanceSetting HorseManeuver = new BalanceSetting("horse_maneuver",
+        "multiplies horse maneuver (turning)",
+        0.9f, 0.1f, 3f);
+
+    public static readonly BalanceSetting HorseAccelTime = new BalanceSetting("horse_accel_time",
+        "multiplies the horse's TopSpeedReachDuration stat (vanilla 0.15-0.7); by its name higher = slower to reach top speed, check the [MPB-ACCEL] log",
+        1f, 0.1f, 5f);
+
+    // Engine (native) parameters, overridden live on the server (NativeParameters). Clients keep their own
+    // values, so watch for snapping.
+    public static readonly BalanceSetting HorseTurnKeepVelocity = new BalanceSetting("horse_turn_keep_speed",
+        "native quadrupedal_delta_rotation_threshold_for_keeping_local_velocity: how sharp a horse can turn before losing its speed",
+        0.6f, 0f, 10f, vanilla: 0.6f, nativeParameter: "quadrupedal_delta_rotation_threshold_for_keeping_local_velocity");
+
+    public static readonly BalanceSetting CouchMinSpeed = new BalanceSetting("couch_min_speed",
+        "native mounted_passive_action_minimum_speed: minimum horse speed (m/s) to couch a lance",
+        9f, 0f, 50f, vanilla: 9f, nativeParameter: "mounted_passive_action_minimum_speed");
+
+    // Horse charges ("bumps", HorseCharge). The engine also requires a running gait, so this only raises the bar.
+    public static readonly BalanceSetting BumpSpeed = new BalanceSetting("bump_speed",
+        "minimum relative speed (m/s) for a horse to bump someone (camels keep their +16%); applies to horses spawned after the change",
+        4.8f, 0f, 50f, vanilla: 4.3f);
+
     public static readonly IReadOnlyList<ISetting> All = new ISetting[]
     {
         SwingSpeedBonus,
         ThrustCurve, ThrustArmorCurve, ThrustCurveHorse, ThrustSpread, ThrustReference, LanceThrust, WeaponMultipliers,
         PierceMissile, PierceKnee, PierceCap,
         Couch, CouchKnee, CouchCap,
-        HorseSpeed, HorseKnee, HorseCap,
+        HorseSpeed, HorseKnee, HorseCap, HorseManeuver, HorseAccelTime, HorseTurnKeepVelocity, CouchMinSpeed,
+        BumpSpeed,
     };
 
-    public static bool IsHorseSetting(ISetting setting) => setting == HorseSpeed || setting == HorseKnee || setting == HorseCap;
+    // Re-applies settings that are baked into agents rather than read on every hit.
+    public static void ApplyLive()
+    {
+        BalancedAgentStatModel.RefreshAllMounts();
+        HorseCharge.ApplySpeedLimit();
+        NativeParameters.Apply();
+    }
 
     public static ISetting Find(string name)
     {

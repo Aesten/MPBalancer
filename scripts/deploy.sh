@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Builds MPBalancer and installs it on the test server, along with run-server.sh.
+# Builds MPBalancer and installs it on the test server.
 #
 # Usage: scripts/deploy.sh [--no-build] [--restart [-- <run-server.sh options>]]
 #   --no-build  copy the existing dist/ output without rebuilding
 #   --restart   stop the running server (if any) and start it again, detached;
 #               options after -- go to run-server.sh, e.g. --restart -- --tickrate 60
 #
+# run-server.sh, which starts the server, is installed by mpManager's scripts/deploy.sh.
 # MPB_HOST overrides the ssh target (default: aesten@7900x).
 
 set -euo pipefail
@@ -43,10 +44,6 @@ MODULE_DIR="$REPO_ROOT/dist/Modules/MPBalancer"
 echo "Installing module to $HOST:~/$REMOTE_DS/Modules/MPBalancer"
 tar -C "$REPO_ROOT/dist/Modules" -cf - MPBalancer \
   | ssh "$HOST" "cd \"\$HOME/$REMOTE_DS/Modules\" && rm -rf MPBalancer && tar -xf -"
-
-echo "Installing run-server.sh to $HOST:~/$REMOTE_SCRIPTS/"
-ssh "$HOST" "cat > \"\$HOME/$REMOTE_SCRIPTS/run-server.sh\" && chmod +x \"\$HOME/$REMOTE_SCRIPTS/run-server.sh\"" \
-  < "$REPO_ROOT/scripts/server/run-server.sh"
 
 if [ "$RESTART" = 1 ]; then
   # %q-quote the pass-through options so they survive the remote shell.

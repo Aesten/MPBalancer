@@ -149,6 +149,21 @@ Changes apply to every horse on the field immediately. Measured and expected top
 
 Keep top speeds well above 9 m/s, the minimum to hold a couched lance (a native rule the server can't change). Slower horses also mean lower relative speeds, so they lower thrust and couch damage on top of the curves.
 
+## Horse handling and bumps
+
+```
+maneuver   = vanilla MountManeuver × horse_maneuver (0.9)
+accel time = vanilla TopSpeedReachDuration × horse_accel_time (1)
+```
+
+Both apply to every horse immediately. `horse_turn_keep_speed` (how sharp a horse can turn before losing speed) and `couch_min_speed` (9 m/s) are engine parameters, overridden on the server only; clients keep their own values. All of these except `horse_maneuver` are vanilla by default.
+
+**Bumps.** A bump happens when a horse runs into someone faster than `bump_speed` (4.8 m/s; vanilla 4.3, the horse Monster's `relative_speed_limit_for_charge`; camels keep their 5.0/4.3 ratio). The engine reads it when a horse spawns, so changes apply from the next spawn. The speed is the closing speed: the horse's velocity minus the victim's velocity along the horse's direction.
+
+The engine also only bumps while the horse is in a running gait: a walking or trotting horse doesn't bump, even above the threshold (the same state also changes its animation). In tests the lowest bump was 5.9 m/s on an Aserai agile horse with the vanilla 4.3. This gate is inside the engine and can't be changed from the server, so `bump_speed` only matters above it: it can raise the requirement but can't make slower horses bump.
+
+Bump damage and knockdowns stay vanilla: damage = (closing speed × angle)² × angle × charge_damage/100, blunt; any damaging, roughly head-on bump knocks back; knockdown needs about 10 damage on foot and 20 on a rider. Because damage grows with speed², the horse speed cap already reduces knockdowns.
+
 ## Settings reference
 
 | Setting | Default | Applies to | Where |
@@ -164,6 +179,9 @@ Keep top speeds well above 9 m/s, the minimum to hold a couched lance (a native 
 | `pierce_knee`, `pierce_cap` | 90, 130 | all pierce damage on players, last | final damage |
 | `couch`, `couch_knee`, `couch_cap` | 1, 0, 200 | couched lances, braced polearms (all victims) | final damage |
 | `horse_speed`, `horse_knee`, `horse_cap` | 0.92, 12.4, 14.2 | horse top speed | horse stats |
+| `horse_maneuver`, `horse_accel_time` | 0.9, 1 | horse turning and acceleration | horse stats |
+| `horse_turn_keep_speed`, `couch_min_speed` | 0.6, 9 (vanilla) | horse speed loss on turns, couch minimum speed | engine parameters |
+| `bump_speed` | 4.8 | minimum speed for a bump | horse Monster, at spawn |
 
 ## Expected damage
 

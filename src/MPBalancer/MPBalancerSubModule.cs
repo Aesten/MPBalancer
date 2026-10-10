@@ -35,6 +35,8 @@ public class MPBalancerSubModule : MBSubModuleBase
             ChatCommands.Attach();
             mission.AddMissionBehavior(new ServerTickBehavior());
             WeaponFactors.EnsureAutoReferences(); // logs the auto references once, at the first mission
+            HorseCharge.ApplySpeedLimit(); // bump_speed lives in the Monster objects, read at each spawn
+            NativeParameters.Apply();
         }
     }
 
