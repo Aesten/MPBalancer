@@ -6,7 +6,7 @@ using TaleWorlds.MountAndBlade;
 
 namespace MPBalancer;
 
-// Logs every damaging hit to the server log ("[MPB-HIT] key=value ..."), and shows a per-player
+// Records every damaging hit (HitLog, CSV), and shows a per-player
 // hit readout in chat (toggled with "!b debug"). Players with it on see every hit they deal
 // or take, e.g. "you -> Bob | pierce, neck | 9.4 m/s (+134%) | armor 12 | vanilla 96 -> 67".
 // The part is the engine's hit body part (head, neck, chest, abdomen, shoulders, arms, legs), not the
@@ -39,54 +39,77 @@ internal static class HitDebug
         {
             return;
         }
-        string source = collisionData.IsMissile ? "missile"
-            : collisionData.IsHorseCharge ? "charge"
-            : collisionData.IsFallDamage ? "fall"
-            : attackInformation.IsAttackerAgentDoingPassiveAttack ? "couch/brace"
-            : (StrikeType)collisionData.StrikeType == StrikeType.Thrust ? "thrust" : "swing";
+        float relativeSpeed = Combat.RelativeSpeed(in attackInformation);
+        string part = BodyPart(collisionData.VictimHitBodyPart);
+
+        // Every damaging hit goes to the hit log (HitLog: values only, written to CSV off the main thread).
+        HitLog.Record(new HitLog.Hit
+        {
+            Time = System.DateTime.UtcNow,
+            Settings = HitLog.SettingsVersion,
+            Type = TypeName(damageType),
+            Source = collisionData.IsMissile ? "missile"
+                : collisionData.IsHorseCharge ? "charge"
+                : collisionData.IsFallDamage ? "fall"
+                : attackInformation.IsAttackerAgentDoingPassiveAttack ? "couch"
+                : (StrikeType)collisionData.StrikeType == StrikeType.Thrust ? "thrust" : "swing",
+            Part = part ?? "none",
+            Victim = attackInformation.IsVictimAgentHuman ? "human" : "horse",
+            Mounted = attackInformation.DoesAttackerHaveMountAgent,
+            Speed = relativeSpeed,
+            Bonus = collisionData.MovementSpeedDamageModifier * 100f,
+            Armor = attackInformation.ArmorAmountFloat,
+            Vanilla = vanillaDamage,
+            Before = beforeDamage,
+            After = finalDamage,
+            Weapon = attackInformation.AttackerWeapon.Item?.StringId ?? "none",
+            Stat = WeaponFactors.ThrustStat(in attackInformation),
+            AttackerSpeed = Combat.AttackerSpeed(in attackInformation),
+            VictimSpeed = Combat.VictimSpeed(in attackInformation),
+            AttackerHorse = Combat.HorseId(attackInformation.AttackerAgent),
+            VictimHorse = Combat.HorseId(attackInformation.VictimAgent),
+        });
+
+        // Bumps get their own readout (speed and knock outcome) from HorseCharge.Report; only pierce in chat (the
+        // other damage types stay vanilla); and the text is only built when someone has the readout on.
+        if (collisionData.IsHorseCharge || damageType != DamageTypes.Pierce || !AnyoneWatching)
+        {
+            return;
+        }
         string speedBonus = collisionData.MovementSpeedDamageModifier != 0f
             ? " (" + (collisionData.MovementSpeedDamageModifier > 0f ? "+" : "") + MathF.Round(collisionData.MovementSpeedDamageModifier * 100f) + "%)"
             : "";
         string damage = Round(vanillaDamage) == Round(finalDamage)
             ? Round(finalDamage) + " (= vanilla)"
             : "vanilla " + Round(vanillaDamage) + " -> " + Round(finalDamage);
-        float relativeSpeed = Combat.RelativeSpeed(in attackInformation);
-        string part = BodyPart(collisionData.VictimHitBodyPart);
-        string text = damageType.ToString().ToLowerInvariant() + (part != null ? ", " + part : "")
+        string text = TypeName(damageType) + (part != null ? ", " + part : "")
             + " | " + relativeSpeed.ToString("0.0", CultureInfo.InvariantCulture) + " m/s" + speedBonus
             + " | armor " + MathF.Round(attackInformation.ArmorAmountFloat)
             + " | " + damage;
-
-        // Every damaging hit goes to the server log, for analysis (grep "[MPB-HIT]").
-        MPBalancerSubModule.Log("[MPB-HIT] type=" + damageType.ToString().ToLowerInvariant()
-            + " src=" + source.Replace("couch/brace", "couch")
-            + " part=" + (part ?? "none")
-            + " victim=" + (attackInformation.IsVictimAgentHuman ? "human" : "horse")
-            + " mounted=" + (attackInformation.DoesAttackerHaveMountAgent ? 1 : 0)
-            + " speed=" + relativeSpeed.ToString("0.0", CultureInfo.InvariantCulture)
-            + " bonus=" + MathF.Round(collisionData.MovementSpeedDamageModifier * 100f)
-            + " armor=" + MathF.Round(attackInformation.ArmorAmountFloat)
-            + " vanilla=" + vanillaDamage.ToString("0.#", CultureInfo.InvariantCulture)
-            + " before=" + beforeDamage.ToString("0.#", CultureInfo.InvariantCulture)
-            + " after=" + finalDamage.ToString("0.#", CultureInfo.InvariantCulture)
-            + " weapon=" + (attackInformation.AttackerWeapon.Item?.StringId ?? "none")
-            + " stat=" + WeaponFactors.ThrustStat(in attackInformation)
-            + " aspeed=" + Combat.AttackerSpeed(in attackInformation).ToString("0.0", CultureInfo.InvariantCulture)
-            + " vspeed=" + Combat.VictimSpeed(in attackInformation).ToString("0.0", CultureInfo.InvariantCulture)
-            + " ahorse=" + Combat.HorseId(attackInformation.AttackerAgent)
-            + " vhorse=" + Combat.HorseId(attackInformation.VictimAgent));
-
-        if (collisionData.IsHorseCharge)
-        {
-            // Bumps get their own readout (speed and knock outcome) from HorseCharge.Report.
-            return;
-        }
-        // Only pierce in chat: the other damage types stay vanilla (they're still logged above).
-        if (damageType != DamageTypes.Pierce)
-        {
-            return;
-        }
         Notify(attackInformation.AttackerAgent, attackInformation.VictimAgent, text);
+    }
+
+    // Whether anyone has the readout on: a cheap check before building readout text.
+    public static bool AnyoneWatching
+    {
+        get
+        {
+            lock (_subscribers)
+            {
+                return _subscribers.Count > 0;
+            }
+        }
+    }
+
+    private static string TypeName(DamageTypes type)
+    {
+        switch (type)
+        {
+            case DamageTypes.Cut: return "cut";
+            case DamageTypes.Pierce: return "pierce";
+            case DamageTypes.Blunt: return "blunt";
+            default: return "invalid";
+        }
     }
 
     // Queues a readout line for the attacker and the victim, if they have the readout on.

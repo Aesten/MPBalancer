@@ -10,7 +10,7 @@ namespace MPBalancer;
 
 // In-game chat commands for admins (players who joined with the server's AdminPassword); "!b debug" is open to
 // everyone, so testers can see what the mod changes on their own hits.
-// "!b" and "!mpb" both work:
+// "!mpb" and its short form "!b" both work:
 //   !b                     list settings and their values
 //   !b <setting>           show one setting's value and description
 //   !b <setting> <value>   change a setting (announced to everyone)
@@ -31,7 +31,7 @@ namespace MPBalancer;
 // mission tick (ServerTickBehavior), and replies go out per peer, the way ChatBox sends chat.
 internal static class ChatCommands
 {
-    private const string Prefix = "!b";
+    private const string Prefix = "!mpb";
 
     private static readonly string[] Prefixes = { "!b", "!mpb" };
 
@@ -47,14 +47,8 @@ internal static class ChatCommands
         {
             return;
         }
-        bool wasRouted = MPManagerLink.Routed;
-        if (MPManagerLink.TryRegister(new[] { "b", "mpb" }, "[<setting> [value] | reset | vanilla | debug | speedo [stats]]",
-            "MPBalancer settings: list them, show or change one, reset, vanilla values, or per-player readouts (debug: everyone).", adminOnly: false, Run))
+        if (RouteThroughMPManager())
         {
-            if (!wasRouted)
-            {
-                MPBalancerSubModule.Log("Chat commands routed through MPManager.");
-            }
             if (_chatBox != null)
             {
                 _chatBox.OnMessageReceivedAtDedicatedServer -= OnMessage;
@@ -74,6 +68,20 @@ internal static class ChatCommands
         _chatBox = chatBox;
         _chatBox.OnMessageReceivedAtDedicatedServer += OnMessage;
         MPBalancerSubModule.Log("Chat commands attached.");
+    }
+
+    // Hands the commands to MPManager if it's loaded (then it handles chat for us); false without it. Called at
+    // startup (every mod's DLL is loaded before any OnSubModuleLoad, so MPManager can be found), and again by Attach.
+    public static bool RouteThroughMPManager()
+    {
+        bool wasRouted = MPManagerLink.Routed;
+        bool routed = MPManagerLink.TryRegister(new[] { "mpb", "b" }, "[<setting> [value] | reset | vanilla | debug | speedo [stats]]",
+            "MPBalancer settings: list them, show or change one, reset, vanilla values, or per-player readouts (debug: everyone).", adminOnly: false, Run);
+        if (routed && !wasRouted)
+        {
+            MPBalancerSubModule.Log("Chat commands routed through MPManager.");
+        }
+        return routed;
     }
 
     private static void OnMessage(NetworkCommunicator fromPeer, string message)
@@ -133,7 +141,7 @@ internal static class ChatCommands
         Handle(peer, args, text => reply("[MPBalancer] " + text));
     }
 
-    // args: the words after "!b". reply answers the caller.
+    // args: the words after "!mpb" (or "!b"). reply answers the caller.
     private static void Handle(NetworkCommunicator peer, string[] args, Action<string> reply)
     {
         string by = peer?.UserName ?? "console";

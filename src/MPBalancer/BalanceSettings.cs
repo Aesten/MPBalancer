@@ -337,6 +337,7 @@ public static class BalanceSettings
         BalancedAgentStatModel.RefreshAllMounts();
         HorseCharge.ApplySpeedLimit();
         NativeParameters.Apply();
+        HitLog.SettingsChanged(); // later hits are logged under a new settings number
     }
 
     public static ISetting Find(string name)

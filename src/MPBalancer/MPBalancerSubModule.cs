@@ -11,6 +11,7 @@ public class MPBalancerSubModule : MBSubModuleBase
     {
         base.OnSubModuleLoad();
         Log("Loaded.");
+        ChatCommands.RouteThroughMPManager(); // so !help lists !b from the start, not from the first mission
     }
 
     // MultiplayerGame registers its own models before this runs, and GetGameModel<T>()
@@ -33,6 +34,7 @@ public class MPBalancerSubModule : MBSubModuleBase
         if (GameNetwork.IsDedicatedServer)
         {
             ChatCommands.Attach();
+            HitLog.Start(); // once, at the first mission
             mission.AddMissionBehavior(new ServerTickBehavior());
             WeaponFactors.EnsureAutoReferences(); // logs the auto references once, at the first mission
             HorseCharge.ApplySpeedLimit(); // bump_speed lives in the Monster objects, read at each spawn

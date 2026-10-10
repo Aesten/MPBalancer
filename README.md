@@ -37,7 +37,7 @@ The server is started by `~/bannerlord/run-server.sh`, which lives in and is dep
 
 ## Tuning in-game
 
-Admins (players who joined with the server's `AdminPassword`) can change settings from chat, effective on the next hit. `!b debug` is open to everyone, so testers can see the mod's effect on their own hits. `!b` and `!mpb` both work, and setting names can be shortened to any unique prefix (`!b horse_k 12.5`); unknown names get a "did you mean" hint.
+Admins (players who joined with the server's `AdminPassword`) can change settings from chat, effective on the next hit. `!b debug` is open to everyone, so testers can see the mod's effect on their own hits. `!mpb` and its short form `!b` both work, and setting names can be shortened to any unique prefix (`!b horse_k 12.5`); unknown names get a "did you mean" hint.
 
 ```
 !b                                  list settings and their values
@@ -85,11 +85,15 @@ With MPManager on the server, these commands are routed through it (`src/MPBalan
 
 `!b debug` shows every pierce hit you deal or take (the other damage types stay vanilla, so they're only logged) in lines like `you -> Bob | pierce, neck | 9.4 m/s (+134%) | armor 12 | vanilla 96 -> 67`: the attacker/victim relative speed, the game's speed bonus, the armor at the hit location, and what the same hit would have done in vanilla.
 
-Every damaging hit is also logged to `server.log` as `[MPB-HIT] key=value ...` (only hits that damage a player or bot: damage type, source, body part hit, speeds, armor, vanilla and dealt damage, weapon and its listed thrust damage, both horses), bumps with their knock outcome as `[MPB-BUMP]`, and `!b speedo` readings as `[MPB-SPEED]` / `[MPB-ACCEL]`. To summarize them:
+Every damaging hit is recorded as a CSV row, one file per server run (`HitLog.cs`): `hits-<start>.csv` (only hits that damage a player or bot: damage type, source, body part hit, speeds, armor, vanilla and dealt damage, weapon and its listed thrust damage, both horses). Each row carries a `settings` number; `settings-<start>.csv` lists the balance values behind each number (a new one after every `!mpb` change), so hits can be compared per configuration, and against the vanilla damage of the same hits. The files go to `MPB_DATA_DIR` (mpManager's `run-server.sh` sets it to `~/bannerlord/metrics`, where earlier runs are gzipped and kept 30 days; without it, `Modules/MPBalancer/data`). Rows are queued by the combat code and written by a background thread once a second, so recording costs the server next to nothing. `!b speedo` readings still go to the log as `[MPB-SPEED]` / `[MPB-ACCEL]`. To summarize hits:
 
 ```sh
-ssh aesten@7900x 'grep "\[MPB-HIT\]" ~/bannerlord/server.log' | python scripts/hit-stats.py
+ssh aesten@7900x 'cat $(ls -t ~/bannerlord/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py              # this run
+ssh aesten@7900x 'cat $(ls -t ~/bannerlord/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py --settings 2 # this run, configuration 2
+ssh aesten@7900x 'zcat ~/bannerlord/metrics/hits-*.csv.gz' | python scripts/hit-stats.py                            # earlier runs
 ```
+
+Settings numbers start over at each server run, so use `--settings` on one run's file.
 
 ## Layout
 
