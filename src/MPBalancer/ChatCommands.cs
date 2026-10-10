@@ -8,7 +8,8 @@ using TaleWorlds.MountAndBlade;
 
 namespace MPBalancer;
 
-// In-game chat commands for admins (players who joined with the server's AdminPassword).
+// In-game chat commands for admins (players who joined with the server's AdminPassword); "!b debug" is open to
+// everyone, so testers can see what the mod changes on their own hits.
 // "!b" and "!mpb" both work:
 //   !b                     list settings and their values
 //   !b <setting>           show one setting's value and description
@@ -48,7 +49,7 @@ internal static class ChatCommands
         }
         bool wasRouted = MPManagerLink.Routed;
         if (MPManagerLink.TryRegister(new[] { "b", "mpb" }, "[<setting> [value] | reset | vanilla | debug | speedo [stats]]",
-            "MPBalancer settings: list them, show or change one, reset, vanilla values, or per-player readouts.", adminOnly: true, Run))
+            "MPBalancer settings: list them, show or change one, reset, vanilla values, or per-player readouts (debug: everyone).", adminOnly: false, Run))
         {
             if (!wasRouted)
             {
@@ -122,16 +123,11 @@ internal static class ChatCommands
         {
             return;
         }
-        if (!fromPeer.IsAdmin)
-        {
-            Reply(fromPeer, "Commands are admin-only. Join with the server's admin password.");
-            return;
-        }
         Handle(fromPeer, parts.Skip(1).ToArray(), text => Reply(fromPeer, text));
     }
 
-    // Entry point when MPManager routes the command (it has checked admin rights). peer is null for the server
-    // console.
+    // Entry point when MPManager routes the command (registered as open to everyone; Handle checks admin rights).
+    // peer is null for the server console.
     private static void Run(NetworkCommunicator peer, string[] args, Action<string> reply)
     {
         Handle(peer, args, text => reply("[MPBalancer] " + text));
@@ -142,6 +138,12 @@ internal static class ChatCommands
     {
         string by = peer?.UserName ?? "console";
         string command = args.Length > 0 ? args[0].ToLowerInvariant() : "help";
+        bool isAdmin = peer == null || peer.IsAdmin;
+        if (!isAdmin && command != "debug")
+        {
+            reply("Only \"!b debug\" is open to everyone; the rest is for admins (join with the server's admin password).");
+            return;
+        }
         switch (command)
         {
         case "help":

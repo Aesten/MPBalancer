@@ -70,7 +70,6 @@ internal static class HorseCharge
     public static void Report(Agent attacker, Agent victim, in AttackCollisionData collisionData, bool knockedBack, bool knockedDown)
     {
         float speed = attacker == _lastAttacker && victim == _lastVictim ? _lastSpeed : -1f;
-        string effect = knockedDown ? "knocked down" : knockedBack ? "knocked back" : "no knock";
         MPBalancerSubModule.Log("[MPB-BUMP] speed=" + F(speed)
             + " engine=" + F(collisionData.ChargeVelocity)
             + " damage=" + collisionData.InflictedDamage
@@ -80,7 +79,7 @@ internal static class HorseCharge
             + " knockdown=" + (knockedDown ? 1 : 0)
             + " ahorse=" + Combat.HorseId(attacker)
             + " bump_speed=" + F(BalanceSettings.BumpSpeed.Value));
-        HitDebug.Notify(attacker, victim, "bump " + F(speed) + " m/s | " + effect);
+        HitDebug.Notify(attacker, victim, "bump " + F(speed) + " m/s");
     }
 
     private static string F(float value) => value.ToString("0.0", CultureInfo.InvariantCulture);

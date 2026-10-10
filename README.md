@@ -37,7 +37,7 @@ The server is started by `~/bannerlord/run-server.sh`, which lives in and is dep
 
 ## Tuning in-game
 
-Admins (players who joined with the server's `AdminPassword`) can change settings from chat, effective on the next hit. `!b` and `!mpb` both work, and setting names can be shortened to any unique prefix (`!b horse_k 12.5`); unknown names get a "did you mean" hint.
+Admins (players who joined with the server's `AdminPassword`) can change settings from chat, effective on the next hit. `!b debug` is open to everyone, so testers can see the mod's effect on their own hits. `!b` and `!mpb` both work, and setting names can be shortened to any unique prefix (`!b horse_k 12.5`); unknown names get a "did you mean" hint.
 
 ```
 !b                                  list settings and their values
