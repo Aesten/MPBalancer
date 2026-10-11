@@ -170,8 +170,7 @@ internal static class Speedometer
             + ", accel time " + F2(mount.GetAgentDrivenPropertyValue(DrivenProperty.TopSpeedReachDuration))
             + ", charge " + F2(mount.GetAgentDrivenPropertyValue(DrivenProperty.MountChargeDamage))
             + ", health " + F0(mount.Health) + "/" + F0(mount.HealthLimit));
-        ChatCommands.Send(peer, "[MPB] bump threshold " + F(mount.Monster.RelativeSpeedLimitForCharge) + " m/s"
-            + " (for horses spawned from now; yours uses the value from when it spawned)");
+        ChatCommands.Send(peer, "[MPB] bump threshold " + F(mount.Monster.RelativeSpeedLimitForCharge) + " m/s (applies to newly spawned horses)");
     }
 
     private static float Heading(Agent mount)

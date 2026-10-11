@@ -188,7 +188,7 @@ internal static class ChatCommands
                 s.Reset();
             }
             BalanceSettings.ApplyLive();
-            Announce(by, "reset to defaults: " + BalanceSettings.Summary());
+            Announce(by, "Reset to defaults: " + BalanceSettings.Summary());
             return;
         case "vanilla":
             foreach (ISetting s in BalanceSettings.All)
@@ -196,7 +196,7 @@ internal static class ChatCommands
                 s.SetVanilla();
             }
             BalanceSettings.ApplyLive();
-            Announce(by, "set vanilla values: " + BalanceSettings.Summary());
+            Announce(by, "Set to vanilla values: " + BalanceSettings.Summary());
             return;
         }
 
@@ -253,10 +253,11 @@ internal static class ChatCommands
     }
 
     // Changes are shown to everyone, so all testers know which values are active.
+    // To everyone, without who did it (that goes to the log only).
     private static void Announce(string by, string text)
     {
-        string line = by + " " + text;
-        MPBalancerSubModule.Log(line);
+        MPBalancerSubModule.Log(by + " " + text);
+        string line = text;
         if (!GameNetwork.NetworkPeersValid)
         {
             return;

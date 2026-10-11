@@ -76,14 +76,11 @@ internal static class HitDebug
         {
             return;
         }
-        string speedBonus = collisionData.MovementSpeedDamageModifier != 0f
-            ? " (" + (collisionData.MovementSpeedDamageModifier > 0f ? "+" : "") + MathF.Round(collisionData.MovementSpeedDamageModifier * 100f) + "%)"
-            : "";
         string damage = Round(vanillaDamage) == Round(finalDamage)
             ? Round(finalDamage) + " (= vanilla)"
             : "vanilla " + Round(vanillaDamage) + " -> " + Round(finalDamage);
         string text = TypeName(damageType) + (part != null ? ", " + part : "")
-            + " | " + relativeSpeed.ToString("0.0", CultureInfo.InvariantCulture) + " m/s" + speedBonus
+            + " | " + relativeSpeed.ToString("0.0", CultureInfo.InvariantCulture) + " m/s"
             + " | armor " + MathF.Round(attackInformation.ArmorAmountFloat)
             + " | " + damage;
         Notify(attackInformation.AttackerAgent, attackInformation.VictimAgent, text);

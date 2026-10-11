@@ -33,7 +33,7 @@ scripts/deploy.sh --restart -- --tickrate 60   # options after -- go to run-serv
 
 `deploy.sh` replaces the module folder as a whole over `ssh` + `tar` (no stale files, no `scp` path-quoting issues). Set `MPB_HOST` to deploy elsewhere. A running server keeps the build it started with until it's restarted.
 
-The server is started by `~/bannerlord/run-server.sh`, which lives in and is deployed by the sibling mpServerConfig repo. It loads MPBalancer unless given `--vanilla`.
+The server is started by `~/bannerlord/run-server.sh`, which lives in and is deployed by the sibling mpServerConfig repo. It loads MPBalancer unless given `--no-balancer`, `--manager-only` or `--vanilla` (no mods at all).
 
 ## Tuning in-game
 
@@ -83,7 +83,7 @@ With MPManager on the server, these commands are routed through it (`src/MPBalan
 
 ### Hit log and stats
 
-`!b debug` shows every pierce hit you deal or take (the other damage types stay vanilla, so they're only logged) in lines like `you -> Bob | pierce, neck | 9.4 m/s (+134%) | armor 12 | vanilla 96 -> 67`: the attacker/victim relative speed, the game's speed bonus, the armor at the hit location, and what the same hit would have done in vanilla.
+`!b debug` shows every pierce hit you deal or take (the other damage types stay vanilla, so they're only logged) in lines like `you -> Bob | pierce, neck | 9.4 m/s | armor 12 | vanilla 96 -> 67`: the attacker/victim relative speed, the armor at the hit location, and what the same hit would have done in vanilla.
 
 Every damaging hit is recorded as a CSV row, one file per server run (`HitLog.cs`): `hits-<start>.csv` (only hits that damage a player or bot: damage type, source, body part hit, speeds, armor, vanilla and dealt damage, weapon and its listed thrust damage, both horses). Each row carries a `settings` number; `settings-<start>.csv` lists the balance values behind each number (a new one after every `!mpb` change), so hits can be compared per configuration, and against the vanilla damage of the same hits. The files go to `MPB_DATA_DIR` (mpManager's `run-server.sh` sets it to `~/bannerlord/metrics`, where earlier runs are gzipped and kept 30 days; without it, `Modules/MPBalancer/data`). Rows are queued by the combat code and written by a background thread once a second, so recording costs the server next to nothing. `!b speedo` readings still go to the log as `[MPB-SPEED]` / `[MPB-ACCEL]`. To summarize hits:
 
