@@ -33,7 +33,7 @@ scripts/deploy.sh --restart -- --tickrate 60   # options after -- go to run-serv
 
 `deploy.sh` replaces the module folder as a whole over `ssh` + `tar` (no stale files, no `scp` path-quoting issues). Set `MPB_HOST` to deploy elsewhere. A running server keeps the build it started with until it's restarted.
 
-The server is started by `~/bannerlord/run-server.sh`, which lives in and is deployed by the sibling mpManager repo (see its README). It loads MPBalancer unless given `--vanilla`.
+The server is started by `~/bannerlord/run-server.sh`, which lives in and is deployed by the sibling mpServerConfig repo. It loads MPBalancer unless given `--vanilla`.
 
 ## Tuning in-game
 
