@@ -21,8 +21,8 @@ namespace MPBalancer;
 //   !b speedo stats        print your current horse's stats once
 // Setting names can be shortened to any unique prefix ("!b horse_k 12"); unknown names get a suggestion.
 //
-// With MPManager on the server, the commands are routed through it (MPManagerLink): "/b" works too, the command
-// is hidden from chat, MPManager's aliases and !help include it, and it works from the server console (mpm cmd).
+// With MPManager on the server, the commands are routed through it (MPManagerLink): the command is hidden from
+// chat, MPManager's aliases and !help include it, and it works from the server console (mpm cmd).
 // Without MPManager, this mod hooks chat itself; the command then still appears in chat (the hook can observe
 // messages but not swallow them).
 //

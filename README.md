@@ -52,7 +52,7 @@ Admins (players who joined with the server's `AdminPassword`) can change setting
 !b speedo stats                     print your current horse's item stats, server stats and bump threshold once
 ```
 
-With MPManager on the server, these commands are routed through it (`src/MPBalancer/MPManagerLink.cs`): they're hidden from chat, `/b` works too, MPManager's aliases and `!help` include them, and they work from the server console (`mpm cmd /b ...`). Without MPManager, MPBalancer hooks chat itself, as before.
+With MPManager on the server, these commands are routed through it (`src/MPBalancer/MPManagerLink.cs`): they're hidden from chat, MPManager's aliases and `!help` include them, and they work from the server console (`mpm cmd /b ...`). Without MPManager, MPBalancer hooks chat itself, as before.
 
 | Setting | Default | Vanilla | What it does |
 |---|---|---|---|
