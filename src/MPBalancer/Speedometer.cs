@@ -6,19 +6,20 @@ using TaleWorlds.MountAndBlade;
 
 namespace MPBalancer;
 
-// "!b speedo": every second, tells the player their horse's speed as the server measures it (from positions),
-// and the top speed since mounting. The server log also gets, silently, the engine velocity, horse turn
+// "!b speedo": every second, tells the player their speed as the server measures it (from positions), and the top
+// speed since mounting or spawning: the horse's when mounted, their own on foot (where the class's speed multiplier
+// and the weight of weapons carried and held decide it, see ItemWeightOverrides). The server log also gets, silently, the engine velocity, horse turn
 // rate and stats ([MPB-SPEED]), and the time from a standstill to 9 m/s (couch) and to 95% of top speed
 // ([MPB-ACCEL]). This is how we found that the server is in charge of movement, so server-side horse speed
 // changes really slow horses.
-// "!b speedo stats": prints the current horse's stats once (PrintStats).
+// "!b speedo stats": prints the current horse's stats once, or on foot the movement stats (PrintStats).
 internal static class Speedometer
 {
     private const float CouchSpeed = 9f;
 
     private sealed class Track
     {
-        public Agent Mount;
+        public Agent Mount; // what is measured: the horse when mounted, the player's character on foot
         public Vec2 LastPosition;
         public float LastHeading;
         public float Distance;
@@ -58,12 +59,14 @@ internal static class Speedometer
                 disconnected.Add(peer);
                 continue;
             }
-            Agent mount = peer.ControlledAgent?.MountAgent;
-            if (mount == null || !mount.IsActive())
+            Agent rider = peer.ControlledAgent;
+            if (rider == null || !rider.IsActive())
             {
                 track.Mount = null;
                 continue;
             }
+            bool onFoot = rider.MountAgent == null || !rider.MountAgent.IsActive();
+            Agent mount = onFoot ? rider : rider.MountAgent;
             Vec2 position = mount.Position.AsVec2;
             float heading = Heading(mount);
             if (track.Mount != mount)
@@ -87,8 +90,11 @@ internal static class Speedometer
             track.Elapsed += dt;
 
             float engine = mount.MovementVelocity.Length;
-            float stat = mount.GetAgentDrivenPropertyValue(DrivenProperty.MountSpeed);
-            TimeAcceleration(peer, track, mount, dt, engine, stat);
+            float stat = onFoot ? 0f : mount.GetAgentDrivenPropertyValue(DrivenProperty.MountSpeed);
+            if (!onFoot)
+            {
+                TimeAcceleration(peer, track, mount, dt, engine, stat);
+            }
 
             if (track.Elapsed < 1f)
             {
@@ -98,6 +104,19 @@ internal static class Speedometer
             float turn = track.Turned / track.Elapsed * MathF.RadToDeg;
             track.Top = MathF.Max(track.Top, measured);
             track.TopTurn = MathF.Max(track.TopTurn, turn);
+            if (onFoot)
+            {
+                ChatCommands.Send(peer, "[MPB] on foot " + F(measured) + " m/s (top " + F(track.Top) + ")");
+                MPBalancerSubModule.Log("[MPB-SPEED] peer=" + PeerName(peer) + " foot=" + ClassId(mount)
+                    + " measured=" + F(measured) + " engine=" + F(engine)
+                    + " max_speed=" + F2(mount.GetAgentDrivenPropertyValue(DrivenProperty.MaxSpeedMultiplier))
+                    + " combat_speed=" + F2(mount.GetAgentDrivenPropertyValue(DrivenProperty.CombatMaxSpeedMultiplier))
+                    + " weapons_kg=" + F(mount.GetAgentDrivenPropertyValue(DrivenProperty.WeaponsEncumbrance)));
+                track.Distance = 0f;
+                track.Turned = 0f;
+                track.Elapsed = 0f;
+                continue;
+            }
             float maneuver = mount.GetAgentDrivenPropertyValue(DrivenProperty.MountManeuver);
             float accel = mount.GetAgentDrivenPropertyValue(DrivenProperty.TopSpeedReachDuration);
             ChatCommands.Send(peer, "[MPB] speed " + F(measured) + " m/s (top " + F(track.Top) + ")");
@@ -154,10 +173,16 @@ internal static class Speedometer
     // skill and perks), and the bump threshold.
     public static void PrintStats(NetworkCommunicator peer)
     {
-        Agent mount = peer.ControlledAgent?.MountAgent;
+        Agent agent = peer.ControlledAgent;
+        if (agent == null || !agent.IsActive())
+        {
+            ChatCommands.Send(peer, "[MPB] You're not spawned.");
+            return;
+        }
+        Agent mount = agent.MountAgent;
         if (mount == null || !mount.IsActive())
         {
-            ChatCommands.Send(peer, "[MPB] You're not on a horse.");
+            PrintFootStats(peer, agent);
             return;
         }
         EquipmentElement horse = mount.SpawnEquipment[EquipmentIndex.Horse];
@@ -172,6 +197,30 @@ internal static class Speedometer
             + ", health " + F0(mount.Health) + "/" + F0(mount.HealthLimit));
         ChatCommands.Send(peer, "[MPB] bump threshold " + F(mount.Monster.RelativeSpeedLimitForCharge) + " m/s (applies to newly spawned horses)");
     }
+
+    // On foot: what the server's movement speed comes from (MultiplayerAgentStatCalculateModel): the class's speed
+    // multiplier divided by 1 + weapon weight / 100, where weapon weight counts everything carried plus extra for what
+    // is held (1.5 x weight x sqrt(length) for the main hand, 4 x for bows; 1.5 x weight for a shield). It changes
+    // as weapons are drawn or sheathed.
+    private static void PrintFootStats(NetworkCommunicator peer, Agent agent)
+    {
+        var carried = new List<string>();
+        for (EquipmentIndex i = EquipmentIndex.WeaponItemBeginSlot; i < EquipmentIndex.NumAllWeaponSlots; i++)
+        {
+            MissionWeapon weapon = agent.Equipment[i];
+            if (!weapon.IsEmpty)
+            {
+                carried.Add((weapon.Item?.Name?.ToString() ?? "?") + " " + F(weapon.GetWeight()) + " kg");
+            }
+        }
+        ChatCommands.Send(peer, "[MPB] " + ClassId(agent) + " | carrying: " + (carried.Count == 0 ? "nothing" : string.Join(", ", carried)));
+        ChatCommands.Send(peer, "[MPB] server: speed x" + F2(agent.GetAgentDrivenPropertyValue(DrivenProperty.MaxSpeedMultiplier))
+            + " (in combat x" + F2(agent.GetAgentDrivenPropertyValue(DrivenProperty.CombatMaxSpeedMultiplier)) + ")"
+            + ", weapon weight counted " + F(agent.GetAgentDrivenPropertyValue(DrivenProperty.WeaponsEncumbrance)) + " kg"
+            + ", time to top speed " + F2(agent.GetAgentDrivenPropertyValue(DrivenProperty.TopSpeedReachDuration)) + " s");
+    }
+
+    private static string ClassId(Agent agent) => (agent.Character?.StringId ?? "?").Replace("mp_", "").Replace("_hero", "");
 
     private static float Heading(Agent mount)
     {

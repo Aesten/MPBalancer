@@ -17,8 +17,8 @@ namespace MPBalancer;
 //   !b reset               restore the mod's defaults
 //   !b vanilla             set everything to vanilla behaviour, for A/B comparisons
 //   !b debug               toggle a per-hit damage readout for yourself
-//   !b speedo              toggle a once-per-second readout of your horse's speed and top speed, as the server measures them
-//   !b speedo stats        print your current horse's stats once
+//   !b speedo              toggle a once-per-second readout of your speed and top speed (horse, or on foot), as the server measures them
+//   !b speedo stats        print your current horse's stats once, or on foot your movement stats
 // Setting names can be shortened to any unique prefix ("!b horse_k 12"); unknown names get a suggestion.
 //
 // With MPManager on the server, the commands are routed through it (MPManagerLink): the command is hidden from
@@ -180,7 +180,7 @@ internal static class ChatCommands
                 Speedometer.PrintStats(peer);
                 return;
             }
-            reply(Speedometer.Toggle(peer) ? "Speedometer on (your horse's speed, as the server measures it, every second)." : "Speedometer off.");
+            reply(Speedometer.Toggle(peer) ? "Speedometer on (your speed, mounted or on foot, as the server measures it, every second)." : "Speedometer off.");
             return;
         case "reset":
             foreach (ISetting s in BalanceSettings.All)

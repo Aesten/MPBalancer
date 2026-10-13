@@ -28,6 +28,18 @@ public class MPBalancerSubModule : MBSubModuleBase
         }
     }
 
+    // Items are loaded by now: apply the item overrides at startup, so a problem shows when the server starts rather
+    // than when the first player joins (they're applied again at each mission and after every settings change).
+    public override void OnGameInitializationFinished(Game game)
+    {
+        base.OnGameInitializationFinished(game);
+        if (GameNetwork.IsDedicatedServer && game.GameType is MultiplayerGame)
+        {
+            ItemWeightOverrides.Apply();
+            HorseHealthOverrides.Apply();
+        }
+    }
+
     public override void OnMissionBehaviorInitialize(Mission mission)
     {
         base.OnMissionBehaviorInitialize(mission);
@@ -38,6 +50,8 @@ public class MPBalancerSubModule : MBSubModuleBase
             mission.AddMissionBehavior(new ServerTickBehavior());
             WeaponFactors.EnsureAutoReferences(); // logs the auto references once, at the first mission
             HorseCharge.ApplySpeedLimit(); // bump_speed lives in the Monster objects, read at each spawn
+            ItemWeightOverrides.Apply(); // item weights live in the item objects, read at each spawn
+            HorseHealthOverrides.Apply(); // horse health too
             NativeParameters.Apply();
         }
     }

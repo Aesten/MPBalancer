@@ -10,6 +10,8 @@ What it changes (all tunable in-game, see [Tuning in-game](#tuning-in-game)):
 - **Missiles**: 85% of vanilla pierce damage. **Pierce on players** is soft-capped above 90 toward 130. **Swings** are vanilla (the target is pierce; cut damage was never the issue), with a `swing` setting kept for tests.
 - **Couched lances / braced polearms**: a curve that approaches 200 and never exceeds it.
 - **Horses**: top speeds compressed to about 12–14 m/s (vanilla about 13–16.6).
+- **Item weights**: the Khuzait Rabble's Curved Round Shield weighs 1 kg instead of 5 (it made the class the slowest infantry; item weights set movement speed in multiplayer).
+- **Horse health**: the Khuzait Steppe Horse and Tarpan have 215 health instead of 185, the Steppe Charger 245.
 
 [docs/mod-damage.md](docs/mod-damage.md) explains how the mod processes a hit: which path each kind of hit takes, where each setting applies, how the curves work, and what damage to expect. [docs/native-damage.md](docs/native-damage.md) describes the vanilla calculation it builds on.
 
@@ -48,8 +50,8 @@ Admins (players who joined with the server's `AdminPassword`) can change setting
 !b reset                            restore the mod's defaults
 !b vanilla                          vanilla behaviour, for A/B comparisons
 !b debug                            toggle a readout of every pierce hit you deal or take, and of bumps
-!b speedo                           toggle a once-per-second readout of your horse's speed and top speed, as the server measures them
-!b speedo stats                     print your current horse's item stats, server stats and bump threshold once
+!b speedo                           toggle a once-per-second readout of your speed and top speed (your horse's, or yours on foot), as the server measures them
+!b speedo stats                     mounted: your horse's item stats, server stats and bump threshold; on foot: the weapons you carry with their weights, the server's speed multipliers (normal and in combat), the weapon weight it counts, and the time to top speed
 ```
 
 With MPManager on the server, these commands are routed through it (`src/MPBalancer/MPManagerLink.cs`): they're hidden from chat, MPManager's aliases and `!help` include them, and they work from the server console (`mpm cmd /b ...`). Without MPManager, MPBalancer hooks chat itself, as before.
@@ -75,6 +77,8 @@ With MPManager on the server, these commands are routed through it (`src/MPBalan
 | `horse_turn_keep_speed` | 0.6 | 0.6 | native: how sharp a horse can turn before losing its speed |
 | `couch_min_speed` | 9 | 9 | native: minimum horse speed (m/s) to couch |
 | `bump_speed` | 4.8 | 4.3 | minimum relative speed (m/s) for a horse bump; the engine also needs a running gait (lowest seen 5.9 m/s), so this can only raise the bar. Applies to horses spawned after the change |
+| `item_weight` | `mp_curved_round_shield:1` | none | item weight in kg per item id. In multiplayer, weapons and shields carried (more so held) slow their carrier; armor weight doesn't count. The Khuzait Rabble's Curved Round Shield (5 kg) made it the slowest infantry class. Applies to characters spawned after the change; clients predict their own movement with the vanilla weight |
+| `horse_hp` | `mp_khuzait_horse_agile:215 mp_khuzait_horse:215 mp_khuzait_horse_charger:245` | none | total health per horse item id (vanilla: 200 plus the horse's extra health; these three Khuzait horses have 185). Applies to horses spawned after the change; a player's own horse health bar can show more than full until the horse is below its vanilla maximum |
 
 - "native" settings override engine parameters (`native_parameters.xml`) on the server only, through the engine's `override_native_parameter`; clients keep their own values, so test for snapping. They're only sent to the engine once changed from vanilla.
 - The thrust, missile and couch settings act on the damage the victim actually takes (after armor, body part and perks). Shield hits aren't affected.
@@ -102,7 +106,7 @@ Settings numbers start over at each server run, so use `--settings` on one run's
   - `Models/` — `BalancedApplyDamageModel` (thrust/missile/couch curves on the final damage), `BalancedStrikeMagnitudeModel` (swing speed bonus), `BalancedAgentStatModel` (horse top speed).
   - `BalanceSettings.cs` — all settings with defaults, vanilla values and ranges; number, curve and table setting types.
   - `WeaponFactors.cs` — weapon spread, lance and per-weapon multipliers. `Combat.cs` — shared helpers (speeds, soft cap, damage type).
-  - `ChatCommands.cs`, `HitDebug.cs`, `Speedometer.cs` — admin commands, hit log/readout, horse speedometer. `ServerTickBehavior.cs` sends their chat output on the mission tick. `VanillaEstimate.cs` — the vanilla damage shown in the hit log.
+  - `ChatCommands.cs`, `HitDebug.cs`, `Speedometer.cs` — admin commands, hit log/readout, speedometer (mounted and on foot). `ServerTickBehavior.cs` sends their chat output on the mission tick. `VanillaEstimate.cs` — the vanilla damage shown in the hit log.
 - `module/SubModule.xml` — module definition, copied into `dist/` on build. `ModuleCategory="Server"` keeps the module from being advertised to clients; `DedicatedServerType="all"` loads it on any dedicated server type but never on a game client.
 - `docs/mod-damage.md` — how the mod processes a hit, where each setting applies, curves, expected damage. `docs/native-damage.md` — the vanilla damage calculation, horse speed and couching rules.
 - `scripts/` — `deploy.sh`, `hit-stats.py`.

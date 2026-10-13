@@ -167,11 +167,19 @@ public sealed class BalanceTable : ISetting
     public string DisplayDefault { get; }
     public string DisplayVanilla => "none";
 
-    public BalanceTable(string name, string description, string defaultValue)
+    private readonly float _max;
+    private readonly string _valueName, _example;
+
+    // Values are 0.._max; valueName and example are for the error message ("multiplier", "mp_aserai_heavy_lance:0.85").
+    public BalanceTable(string name, string description, string defaultValue, float max = 5f, string valueName = "multiplier",
+        string example = "mp_aserai_heavy_lance:0.85")
     {
         Name = name;
         Description = description;
         DisplayDefault = defaultValue;
+        _max = max;
+        _valueName = valueName;
+        _example = example;
         Reset();
     }
 
@@ -195,6 +203,8 @@ public sealed class BalanceTable : ISetting
 
     public float Get(string id) => id != null && _entries.TryGetValue(id, out float value) ? value : 1f;
 
+    public IReadOnlyDictionary<string, float> Entries => _entries;
+
     private Dictionary<string, float> Parse(string text, out string error)
     {
         var entries = new Dictionary<string, float>();
@@ -206,9 +216,10 @@ public sealed class BalanceTable : ISetting
             }
             int colon = token.LastIndexOf(':');
             if (colon <= 0 || !float.TryParse(token.Substring(colon + 1), NumberStyles.Float, CultureInfo.InvariantCulture, out float value)
-                || value < 0f || value > 5f)
+                || value < 0f || value > _max)
             {
-                error = "Invalid entry '" + token + "' for " + Name + ": use item_id:multiplier pairs, e.g. mp_aserai_heavy_lance:0.85, or none.";
+                error = "Invalid entry '" + token + "' for " + Name + ": use item_id:" + _valueName + " pairs (" + _valueName + " 0 to "
+                    + BalanceSetting.Format(_max) + "), e.g. " + _example + ", or none.";
                 return null;
             }
             entries[token.Substring(0, colon)] = value;
@@ -257,6 +268,18 @@ public static class BalanceSettings
     public static readonly BalanceTable WeaponMultipliers = new BalanceTable("weapon_mult",
         "extra multiplier on melee thrusts per weapon item id (item_id:multiplier pairs, or none)",
         "mp_aserai_heavy_lance:0.85");
+
+    // Item weights (ItemWeightOverrides): what carrying and holding items costs in movement speed. Applies to characters
+    // spawned after the change; clients keep the vanilla weight for their own movement prediction.
+    public static readonly BalanceTable ItemWeights = new BalanceTable("item_weight",
+        "item weight in kg per item id (item_id:kg pairs, or none); weapons and shields slow their carrier, armor doesn't in multiplayer",
+        "mp_curved_round_shield:1", max: 100f, valueName: "kg", example: "mp_curved_round_shield:1");
+
+    // Horse health (HorseHealthOverrides): total health per horse item. Applies to horses spawned after the change.
+    public static readonly BalanceTable HorseHealth = new BalanceTable("horse_hp",
+        "total health per horse item id (item_id:hp pairs, or none); vanilla is 200 plus the horse's extra health",
+        "mp_khuzait_horse_agile:215 mp_khuzait_horse:215 mp_khuzait_horse_charger:245", max: 2000f, valueName: "hp",
+        example: "mp_khuzait_horse:215");
 
     // Missiles and the pierce soft cap (BalancedApplyDamageModel).
     public static readonly BalanceSetting PierceMissile = new BalanceSetting("pierce_missile",
@@ -328,7 +351,7 @@ public static class BalanceSettings
         PierceMissile, PierceKnee, PierceCap,
         Couch, CouchKnee, CouchCap,
         HorseSpeed, HorseKnee, HorseCap, HorseManeuver, HorseAccelTime, HorseTurnKeepVelocity, CouchMinSpeed,
-        BumpSpeed,
+        BumpSpeed, ItemWeights, HorseHealth,
     };
 
     // Re-applies settings that are baked into agents rather than read on every hit.
@@ -337,6 +360,8 @@ public static class BalanceSettings
         BalancedAgentStatModel.RefreshAllMounts();
         HorseCharge.ApplySpeedLimit();
         NativeParameters.Apply();
+        ItemWeightOverrides.Apply();
+        HorseHealthOverrides.Apply();
         HitLog.SettingsChanged(); // later hits are logged under a new settings number
     }
 
