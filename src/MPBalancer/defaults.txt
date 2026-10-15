@@ -1,0 +1,63 @@
+# MPBalancer defaults: the value each setting starts with (and goes back to with "!b reset").
+# Built into the DLL (an embedded resource), so changing a value here needs a rebuild and deploy. Live changes
+# ("!b <setting> <value>") last until the next restart. Names, descriptions, limits and vanilla values are in
+# BalanceSettings.cs; "!b" in game lists them. A missing or invalid line falls back to the vanilla value (logged).
+# scripts/curve-editor.py edits the speed curves here. Each set of defaults played is recorded in
+# docs/settings-history.md.
+
+swing = 1
+
+# Melee pierce thrusts: thrust_model = 1 makes them do a percentage of vanilla's strength for the same hit (perks
+# included) by the closing speed along the thrust; armor and body part then apply as in vanilla. 0 = vanilla.
+thrust_model = 1
+
+# Speed curves: % of vanilla, one value per m/s of closing speed from 0 to 25 (beyond 25: the last value). Weapons
+# that can't couch, then lances (both the same for now). Shaped on the damage, not on vanilla: within a couple of
+# points of the standing hit up to 4 m/s (vanilla already gains 60-90% there), then rising faster and faster up to
+# about 9 m/s and flattening after 13 (the % dips near 4 m/s and rises again to 10 because vanilla jumps at low speed).
+# Fitted on the Aserai Heavy Lance: head hit on armor 55 at 13.1 m/s does 72 (vanilla 107). Damage never goes below
+# the standing hit and still rises with speed. Never above 100% (capped per hit).
+thrust_curve_spear = 100 88.7 79.2 71.1 64.2 62.5 62.8 64.3 66.2 67.9 69 69.1 68.5 67.2 65.3 63.1 60.6 58.1 55.5 52.9 50.4 48 45.7 43.6 41.5 39.6
+thrust_curve_lance = 100 88.7 79.2 71.1 64.2 62.5 62.8 64.3 66.2 67.9 69 69.1 68.5 67.2 65.3 63.1 60.6 58.1 55.5 52.9 50.4 48 45.7 43.6 41.5 39.6
+
+# Per-weapon multipliers on thrusts (item_id:multiplier), or none: for exceptions. Capped at vanilla like the curves.
+weapon_mult = none
+
+# Missiles: full damage (0.85 until 15 October). Headshots (head and neck, pierce missiles): 1.5 on players (vanilla 2),
+# vanilla 1.2 on horses.
+pierce_missile = 1
+missile_head = 1.5
+missile_head_horse = 1.2
+
+# Infantry perks' bonus against horses (Cavalry Breaker, Spearman, Farmer) only with polearms (spears, pikes), the
+# weapons those perks come with; vanilla applies it to any weapon.
+mount_damage_polearm = 1
+
+pierce_knee = 90
+pierce_cap = 130
+
+couch = 1
+couch_knee = 0
+couch_cap = 200
+
+horse_speed = 0.92
+horse_knee = 12.4
+horse_cap = 14.2
+horse_maneuver = 0.95
+horse_accel_time = 1
+horse_turn_keep_speed = 0.6
+couch_min_speed = 9
+bump_speed = 4.8
+
+# Listed thrust damage per weapon (first thrusting usage; the others scale alike; couches and braces stay vanilla).
+# Vanilla: Battanian Long Spear 29, Khuzait Long Lance 29, Vlandian Heavy Lance 33, Sturgian Long Lance, Western Lance
+# and Khuzait Lance 31, Bamboo Lance 30, Sturgian Lance and Vlandian Long Lance 29. Lances raised so every lance beats
+# plain spears: at 12 m/s (head, armor 55) Khuzait Long Lance ~ the heavy lances, the 31s ~ the Vlandian Heavy Lance's
+# old level, Bamboo Lance ~ the Line Breaker spears, the 29s ~ the Khuzait Long Lance's old level.
+thrust_damage = mp_battania_long_spear:30 mp_khuzait_lance_long:36 mp_vlandian_heavy_lance:34 mp_sturgia_long_lance:37 mp_western_lance:38 mp_khuzait_lance_heavy:38 mp_aserai_long_lance:35 mp_sturgia_lance:33 mp_western_long_lance:34
+
+# Khuzait Rabble's shield (5 kg vanilla), Khuzait horses' health (185 vanilla) and the Khuzait light cavalry's Small
+# Shield perk (2 shields instead of 1).
+item_weight = mp_curved_round_shield:1
+horse_hp = mp_khuzait_horse_agile:215 mp_khuzait_horse:215 mp_khuzait_horse_charger:245
+small_shields = 2

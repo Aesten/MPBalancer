@@ -10,15 +10,14 @@ The mod hooks into two places in the damage pipeline, plus horse stats:
 engine collision
   │
   ├─ 1. relative speed
-  ├─ 2. magnitude ............................ swings only: speed × swing (default 1 = vanilla) (BalancedStrikeMagnitudeModel)
+  ├─ 2. magnitude ............................ swings: speed × swing (default 1 = vanilla)      (BalancedStrikeMagnitudeModel)
+  │                                            melee pierce thrusts: vanilla strike × thrust_curve_lance or
+  │                                            thrust_curve_spear (closing speed) × weapon_mult, at most vanilla
   ├─ 3–6. hit quality, damage factor, armor, body part (vanilla)
   └─ 7. perks (vanilla), then MPBalancer's final-damage stage:                             (BalancedApplyDamageModel)
          shield hit?                    → unchanged
          couched lance / braced polearm → × couch, then soft cap toward couch_cap
          missile, pierce                → × pierce_missile
-         melee thrust, pierce           → × thrust_curve(speed) × thrust_armor_curve(armor)   on players
-                                          × thrust_curve_horse(speed)                         on horses
-                                          × weapon factors (thrust_spread, lance, weapon_mult)
          anything else                  → unchanged
          then, pierce on players        → soft cap: pierce_knee → pierce_cap
        → damage dealt
@@ -26,7 +25,7 @@ engine collision
 horse stats (any time they're computed): MountSpeed × horse_speed, then soft cap horse_knee → horse_cap
 ```
 
-Because thrusts are shaped at the very end, every number in that branch is a plain "% of what vanilla would have dealt for this exact hit": vanilla still decides the physics, timing, impact point, armor and body part, and the mod scales the result.
+Melee thrusts are shaped at the strike (step 2): everything after it (armor, body part, perks) is vanilla and, in multiplayer, proportional, so the speed curves read directly as "% of vanilla damage". Missiles and couches are shaped on the final damage.
 
 ## Which path a hit takes
 
@@ -37,7 +36,7 @@ The checks are made in this order, on the damage after vanilla step 7:
 | Blocked by a shield | Nothing (shield damage stays vanilla; only a non-default `swing` would change swings blocked by shields) |
 | Couched lance or braced polearm | Couch curve, on players and horses |
 | Arrow, bolt or thrown weapon (pierce) | × `pierce_missile`, then the pierce soft cap on players |
-| Melee thrust that lands as pierce | Thrust curves and weapon factors, then the pierce soft cap on players |
+| Melee thrust that lands as pierce | % of vanilla by closing speed at the strike (`thrust_model` 1), then the pierce soft cap on players |
 | Swing (cut or blunt) | Nothing by default (`swing` is 1) |
 | Arm/hilt hits, non-tip thrusts that land blunt, kicks, shield bashes, horse charges, falls | Nothing |
 
@@ -46,61 +45,78 @@ The checks are made in this order, on the damage after vanilla step 7:
 ## Melee thrusts
 
 ```
-damage dealt = vanilla damage
-             × thrust_curve(relative speed)          players only
-             × thrust_armor_curve(armor at hit)       players only
-             × thrust_curve_horse(relative speed)     horses only
-             × (listed thrust damage / reference) ^ thrust_spread
-             × lance                                  if the weapon can couch
-             × weapon_mult[weapon id]                 if listed
+strike = vanilla's strike × curve(closing speed) × weapon_mult[weapon id], at most vanilla's strike
+         curve: thrust_curve_lance for lances (weapons that can couch), thrust_curve_spear for everything else
+damage = strike → vanilla: armor, body part
 then, on players: soft cap (pierce_knee 90 → pierce_cap 130)
 ```
 
-- **Relative speed** is the length of the attacker/victim relative velocity in m/s (the mount's velocity when riding), the same "speed" the hit log shows. It isn't projected onto the blow direction. A horse at full speed hitting a standing target is about 12–14 m/s; 20+ m/s means both sides are moving into each other.
-- **Armor** is the armor of the body part that was hit, the same value vanilla uses: a head without a helmet counts as 0 even in heavy body armor.
-- **Vanilla physics is untouched.** Weapons keep their vanilla relation to each other at every speed: heavy lances gain more from speed than spears, exactly as in vanilla.
+- **Vanilla's strike** is `0.0625 × (weight + 2.5) × (thrust speed + closing speed / 2)² × thrust damage factor`, with the thrust speed scaled by how far the thrust had come. With no closing speed that is exactly the weapon's **listed thrust damage** (`Crafting.CalculateThrustBaseDamage`). Perks that strengthen the speed bonus lengthen the closing speed term, and they stay in: Lancer (heavy cavalry, comes with the heavy lance) ×1.153 for Aserai, Khuzait and Sturgia and ×1.072 for Vlandia; Line Breaker (Battanian and Khuzait light cavalry, comes with their cavalry spear) and Ride Like the Wind ×1.225.
+- **Closing speed** is vanilla's: the attacker/victim relative velocity (the mount's when riding) projected on the thrust's direction, +0.2 for alignment, without the perks. A horse at full speed thrusting straight into a standing target is about 12–14 m/s; two horses meeting head-on, up to about 25. The `!b debug` readout and the hit log (`closing` column) show it.
+- **Why a % of vanilla:** vanilla adds half the closing speed to the thrust speed before squaring, and multiplies by the weapon's weight, so damage runs away at speed (×4–6 at 12 m/s, ×9–11 at 25). The curves keep slow hits close to the standing hit and let speed add steadily up to about 13 m/s, then less and less. Vanilla's order between weapons stays: heavier weapons, slower thrusts (which gain more from speed) and speed bonus perks still hit harder.
+- **Lances** (a couch usage: the heavy and long lances, not the Heavy Kontos, which only braces) have their own curve; it's the same as the spears' for now.
+- **Armor** is vanilla's, applied to the strike: in multiplayer one value per class (class armor + perks), the same on every body part, and pierce damage × `0.25 × 100/(100+A) + 0.75 × 45/(45+A)`: × 0.84 at 10 armor, 0.68 at 25, 0.57 at 40, 0.50 at 55.
+- **Horses** take the same curves as players.
+- **Never more than vanilla:** curves above 100% and `weapon_mult` above 1 are capped per hit at vanilla's strike.
+- `thrust_model 0` puts vanilla back (`!b vanilla` does).
 
 ### Worked example
 
-Western lance (listed thrust 31, a lance), head hit at 12 m/s on 53 armor; vanilla would deal 72:
+Aserai Heavy Lance (listed one-handed thrust 34, Lancer perk), full thrust to the head at 13.1 m/s closing speed, 55 armor:
 
 | Step | Factor | Damage |
 |---|---|---|
-| Vanilla | | 72 |
-| `thrust_curve` at 12 m/s | 52% | 37.4 |
-| `thrust_armor_curve` at 53 | 116% | 43.4 |
-| `thrust_spread` (31 / lance median 31) ^ 0.5 | 1.00 | 43.4 |
-| `lance` | 1.15 | 49.9 |
-| `weapon_mult` | not listed | 49.9 |
-| Soft cap | below 90, unchanged | **50** |
+| Vanilla strike | 34 × ((6.04 + 1.153 × 6.55) / 6.04)² | 172.4 |
+| `thrust_curve_lance` at 13.1 m/s | 67% | 115.5 |
+| Armor 55 | × 0.499 | 57.6 |
+| Head | × 1.25 | 72.0 |
+| Soft cap | below 90, unchanged | **72** |
+
+Vanilla would deal 107.
 
 ## How curves work
 
-A curve is a list of `x:percent` points, for example `thrust_curve 0:72 2:67 4:63 6:60 8:57 10:54 12:52 16:49 20:46`:
+`thrust_curve_spear` and `thrust_curve_lance` are % of vanilla by closing speed: 26 values, one per m/s from 0 to 25 (`!b thrust_curve_spear 100 100 100 ...`), held at the last value above 25; `x:percent` pairs work too, interpolated in straight lines between points. `scripts/curve-editor.py` edits them, and they're stored in `src/MPBalancer/defaults.txt`.
 
-- **x** is the relative speed in m/s for `thrust_curve` and `thrust_curve_horse`, and the armor at the hit location for `thrust_armor_curve`.
-- **Between two points** the value is interpolated in a straight line: at 3 m/s, `thrust_curve` gives 65%.
-- **Below the first point and above the last** the end value is held: above 20 m/s, `thrust_curve` stays at 46%; above 53 armor, the armor curve stays at 116%.
-- **Points can be added or removed freely** and are sorted automatically: `!b thrust_curve 0:70 4:61 20:45` is a valid three-point curve. `0:100` (a single point at 100%) means vanilla.
+The defaults (the same for spears and lances for now) are shaped on the damage rather than on vanilla: a thrust stays within a couple of points of the standing hit up to 4 m/s (vanilla already gains 60–90% there), then rises faster and faster up to about 9 m/s and flattens after about 13. That's why the percentage dips near 4 m/s and rises again up to 10: vanilla jumps at low speed. Damage never goes below the standing hit and still rises with speed for every weapon.
 
-The default curves:
+| Closing speed (m/s) | 0 | 2 | 4 | 6 | 8 | 10 | 12 | 14 | 16 | 18 | 20 | 25 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| `thrust_curve_spear`, `thrust_curve_lance` | 100% | 79% | 64% | 63% | 66% | 69% | 68% | 65% | 61% | 56% | 50% | 40% |
 
-| Speed (m/s) | 0 | 2 | 4 | 6 | 8 | 10 | 12 | 16 | 20+ |
-|---|---|---|---|---|---|---|---|---|---|
-| `thrust_curve` (players) | 72% | 67% | 63% | 60% | 57% | 54% | 52% | 49% | 46% |
-| `thrust_curve_horse` | 100% | 94% | 89% | 85% | 81% | 78% | 76% | 73% | 70% |
+They're fitted on the Aserai Heavy Lance: a head hit on armor 55 at 13.1 m/s does 72 (vanilla 107, the previous curves 96). With one curve for everything, spears and lances differ only as vanilla makes them (weight, thrust speed, perks).
 
-| Armor | 0 | 10 | 20 | 35 | 53+ |
-|---|---|---|---|---|---|
-| `thrust_armor_curve` (players) | 125% | 120% | 120% | 127% | 116% |
+Compared with vanilla (unarmored body hits, full one-handed thrusts; vanilla in brackets):
 
-The armor curve is a correction on top of vanilla's armor formula, not a replacement: vanilla already reduces pierce damage by 27% at 20 armor and 49% at 53. Values above 100% at high armor give back part of that, so armor still matters but heavy armor isn't immune to thrusts. Combined with the speed curve, a thrust on players ends up between about 90% (unarmored, standing) and 53% (53 armor, 20 m/s) of vanilla.
+| Weapon (listed thrust, perk) | 0 m/s | 4 m/s | 8 m/s | 12 m/s | 16 m/s | 20 m/s | 25 m/s |
+|---|---|---|---|---|---|---|---|
+| Western Long Spear (29) | 29 (29) | 30 (47) | 46 (69) | 66 (96) | 77 (127) | 82 (163) | 84 (213) |
+| Battanian Long Spear (29+1, `thrust_damage`) | 30 (30) | 31 (48) | 46 (70) | 66 (97) | 77 (127) | 81 (161) | 83 (211) |
+| Western Cavalry Spear (33) | 33 (33) | 34 (53) | 51 (78) | 73 (107) | 86 (141) | 91 (180) | 93 (235) |
+| Battanian Cavalry Spear (33, Line Breaker) | 33 (33) | 38 (58) | 60 (91) | 90 (131) | 108 (178) | 117 (233) | 123 (311) |
+| Western Lance (31) | 31 (31) | 34 (53) | 54 (81) | 79 (115) | 94 (155) | 101 (201) | 106 (267) |
+| Vlandian Heavy Lance (33, Lancer) | 33 (33) | 39 (61) | 64 (97) | 97 (141) | 117 (194) | 128 (254) | 136 (342) |
+| Aserai Heavy Lance (34, Lancer) | 34 (34) | 42 (65) | 70 (106) | 107 (157) | 132 (217) | 145 (288) | 155 (390) |
 
-## Weapon factors (melee thrusts only)
+On players, the pierce soft cap then bends anything above 90 toward 130.
 
-- **`thrust_spread`** (default 0.5): `× (listed thrust damage / reference) ^ thrust_spread`. The listed thrust damage is the number in the loadout screen (for the usage being used, one- or two-handed). The reference is `thrust_ref`, or when that's 0, the median listed thrust damage of the weapon's group, logged at startup: one-handed polearms 29, one-handed lances 31, two-handed polearms 36, two-handed lances 36. Lances (items that can couch) are grouped separately because they list lower thrust damage than spears. Example: a spear listed at 33 among one-handed polearms gets (33 / 29) ^ 0.5 = × 1.07. `0` turns it off.
-- **`lance`** (default 1.15): extra multiplier for weapons that can couch.
-- **`weapon_mult`** (default `mp_aserai_heavy_lance:0.85`): extra multiplier per item id. The Aserai heavy lance is the strongest weapon in vanilla physics (heaviest, slowest thrust), so speed adds the most to it.
+## Per-weapon multiplier
+
+- **`weapon_mult`** (default none): extra multiplier on melee thrusts per item id, for exceptions. Capped at vanilla, so above 1 it only helps where the curve is below 100%.
+
+## The hit log's vanilla column
+
+Each hit's `vanilla` is what vanilla would have dealt for the same hit (same weapon, speeds, timing, body part, armor and perks): the mod's damage with every per-hit change undone. They all scale the damage proportionally, so this is exact up to the game's rounding to whole points.
+
+| Undone | How |
+|---|---|
+| Thrust curves (`thrust_model`, `thrust_curve_*`, `weapon_mult`), `swing` | vanilla's strike over ours, recorded when the strike is computed (`VanillaEstimate`) |
+| `thrust_damage` | the weapon's vanilla thrust damage factor over the current one |
+| `missile_head`, `missile_head_horse` | vanilla's body part multiplier over ours |
+| `mount_damage_polearm` | it acts after the column is taken (the column keeps the perk's bonus) |
+| `pierce_missile`, couch curve, soft caps | they act after the column is taken |
+
+Not undone, because they change the hit itself rather than its damage: horse speed and handling (a slower horse hits at a lower speed), item weights, horse health.
 
 ## Soft caps
 
@@ -122,7 +138,8 @@ With knee 0 (the couch default) it compresses from the start: `200 × tanh(damag
 ## Other attacks
 
 - **Swings:** vanilla by default. The balancing targets pierce; cut damage was never the issue. `swing` scales the movement speed added to a swing at step 2 (standing swings are never affected); it was 0.75 in earlier versions, a leftover from the first general speed-bonus nerf, and trimmed mounted swings by about 5–10%. It's the only change inside the physics, so it would also affect swings blocked by shields.
-- **Missiles:** `× pierce_missile` (0.85) on the final damage, then the pierce soft cap on players. Missile speed physics is vanilla.
+- **Missiles:** `× pierce_missile` (1, vanilla; 0.85 until 15 October) on the final damage, then the pierce soft cap on players. Missile speed physics is vanilla. Headshots (head and neck) are set where the game picks the body part multiplier (`GetDamageMultiplierForBodyPart`, before armor): `missile_head` 1.5 on players (vanilla 2), `missile_head_horse` 1.2 on horses (vanilla, the same as for any pierce hit to a horse's head). The hit log's `vanilla` column uses vanilla's multiplier.
+- **Anti-horse infantry perks:** Cavalry Breaker (heavy infantry, Empire shock infantry: +100% / +75% against horses), Spearman and Farmer (light infantry: +50–75%) are `MountDamage` perk effects without a weapon filter: vanilla applies them to any melee weapon (Cavalry Breaker) or any attack, thrown and ranged included (Spearman, Farmer). With `mount_damage_polearm` 1, an infantry class's bonus only counts with a polearm in hand (one- or two-handed, by grip), the spear or pike those perks come with; otherwise the game's damage multiplier (1 + damage bonuses + damage taken) is recomputed without it. Ranged classes' perks are untouched.
 - **Couched lances and braced polearms:** `× couch` (1.0), then the soft cap with knee 0 and cap 200, on players and horses. Couch damage is almost entirely speed:
 
 | Speed (m/s) | 4 | 6 | 8 | 9 | 10 | 11 | 13 | 16 | 20 |
@@ -169,57 +186,39 @@ Bump damage and knockdowns stay vanilla: damage = (closing speed × angle)² × 
 | Setting | Default | Applies to | Where |
 |---|---|---|---|
 | `swing` | 1 (vanilla) | swings (all victims, shields too) | step 2 |
-| `thrust_curve` | see above | melee pierce thrusts on players | final damage |
-| `thrust_armor_curve` | see above | melee pierce thrusts on players | final damage |
-| `thrust_curve_horse` | see above | melee pierce thrusts on horses | final damage |
-| `thrust_spread`, `thrust_ref` | 0.5, 0 (auto) | melee pierce thrusts | final damage |
-| `lance` | 1.15 | melee pierce thrusts with weapons that can couch | final damage |
-| `weapon_mult` | `mp_aserai_heavy_lance:0.85` | melee pierce thrusts with listed weapons | final damage |
-| `pierce_missile` | 0.85 | arrows, bolts, thrown weapons | final damage |
+| `thrust_model` | 1 (0 = vanilla) | melee pierce thrusts | step 2 |
+| `thrust_curve_spear` | see above | melee pierce thrusts with weapons that can't couch | step 2 |
+| `thrust_curve_lance` | see above | melee pierce thrusts with lances | step 2 |
+| `weapon_mult` | none | melee pierce thrusts with listed weapons | step 2 |
+| `pierce_missile` | 1 | arrows, bolts, thrown weapons | final damage |
+| `missile_head`, `missile_head_horse` | 1.5, 1.2 | pierce missiles to the head and neck, players / horses | body part multiplier |
+| `mount_damage_polearm` | 1 | infantry perks' bonus against horses | perk multiplier (final damage) |
 | `pierce_knee`, `pierce_cap` | 90, 130 | all pierce damage on players, last | final damage |
 | `couch`, `couch_knee`, `couch_cap` | 1, 0, 200 | couched lances, braced polearms (all victims) | final damage |
 | `horse_speed`, `horse_knee`, `horse_cap` | 0.92, 12.4, 14.2 | horse top speed | horse stats |
-| `horse_maneuver`, `horse_accel_time` | 0.9, 1 | horse turning and acceleration | horse stats |
+| `horse_maneuver`, `horse_accel_time` | 0.95, 1 | horse turning and acceleration | horse stats |
 | `horse_turn_keep_speed`, `couch_min_speed` | 0.6, 9 (vanilla) | horse speed loss on turns, couch minimum speed | engine parameters |
 | `bump_speed` | 4.8 | minimum speed for a bump | horse Monster, at spawn |
 
 ## Expected damage
 
-Head hits on players with the defaults, at 12 / 14 / 16 m/s (body hits are 20% lower):
+Full thrusts to the head on players with the defaults, at 6 / 12 / 18 m/s closing speed (body hits 20% lower), before the soft cap (above 90 → toward 130):
 
-| Armor | Western lance | Aserai heavy lance | Battanian cavalry spear |
-|---|---|---|---|
-| 0 | 105 / 115 / 122 | 120 / 126 / 128 | 109 / 119 / 125 |
-| 10 | 85 / 97 / 107 | 103 / 115 / 123 | 90 / 102 / 112 |
-| 20 | 74 / 84 / 94 | 90 / 103 / 114 | 78 / 88 / 99 |
-| 35 | 65 / 74 / 83 | 79 / 91 / 103 | 69 / 78 / 88 |
-| 53 | 50 / 57 / 63 | 61 / 70 / 79 | 52 / 60 / 67 |
-
-These come from vanilla physics fitted on logged hits (unarmored targets; `body ≈ base × (1 + coef × speed)²`, head = body × 1.25), combined with the formulas above:
-
-| Weapon | Listed thrust | Base (body, 0 m/s) | Coef | Vanilla body at 8 / 12 m/s |
+| Armor | Western Cavalry Spear (33) | Battanian Cavalry Spear (33, Line Breaker) | Western Lance (31) | Aserai Heavy Lance (34, Lancer) |
 |---|---|---|---|---|
-| Aserai heavy lance | 34 | 33.5 | 0.096 | 104 / 155 |
-| Battanian cavalry spear | 33 | 32.3 | 0.083 | 89 / 128 |
-| Khuzait long lance | 29 | 28.6 | 0.090 | 85 / 124 |
-| Sturgian long lance | 31 | 30.4 | 0.079 | 81 / 117 |
-| Western long lance | 29 | 28.5 | 0.077 | 74 / 107 |
-| Aserai bamboo spear | 32 | 32.2 | 0.068 | 77 / 106 |
-| Khuzait long spear | 31 | 31.1 | 0.069 | 75 / 104 |
-| Western long spear | 29 | 28.8 | 0.068 | 69 / 96 |
-
-Checks against play: the speed curves were measured within 1–3 points of their values (e.g. players 70 / 63 / 57 / 51% at 0–2 / 4–6 / 8–10 / 12–16 m/s), and a session at 45+ armor measured 47 / 56 to the head at 8–12 / 12+ m/s against the modeled 50 / 57. Head-on cavalry clashes (22–25 m/s) can exceed the table.
+| 0 | 51 / 92 / 111 | 58 / 112 / 142 | 52 / 99 / 123 | 66 / 134 / 174 |
+| 10 | 43 / 77 / 93 | 49 / 94 / 119 | 44 / 83 / 104 | 56 / 113 / 147 |
+| 25 | 35 / 63 / 76 | 40 / 77 / 97 | 36 / 67 / 84 | 45 / 92 / 119 |
+| 40 | 29 / 53 / 64 | 33 / 65 / 82 | 30 / 57 / 71 | 38 / 77 / 100 |
+| 55 | 25 / 46 / 55 | 29 / 56 / 71 | 26 / 49 / 61 | 33 / 67 / 87 |
 
 Thrusts that don't land with the tip, or hit with the arm, are multiplied by 0.15 by the game, so occasional 3–6 damage hits are expected.
 
 ## Why it's built this way
 
-- **Thrusts are shaped on the final damage, not in the physics.** Speed is added to the weapon's own speed before squaring, so scaling it takes proportionally more from weapons whose damage comes mostly from speed. Lances are exactly those weapons, so a physics speed factor made them weaker than spears, and a low factor also removed the walking bonus that hides imperfect hits. A "% of vanilla by speed" curve keeps every weapon's vanilla relation and can take any shape.
-- **Horses get their own curve** because the player curve made proper thrusts on horses far too weak, especially at low speed. Thrusts on horses stay at vanilla when standing and lose less at speed than thrusts on players.
-- **The armor curve** exists because the same speed cut at every armor level made unarmored players barely more vulnerable than armored ones, while heavily armored players took 5–6 thrusts to kill.
+- **Thrusts are a % of vanilla, falling with speed.** An earlier version scaled the speed fed into vanilla's formula, which took proportionally more from lances and removed the small walking bonus. Another bent the final damage with "% of vanilla" curves plus armor and per-weapon corrections, which pulled against each other. The one before this took the weapon's standing strength (its listed thrust damage) times a speed curve of its own: clean, but it flattened every weapon toward its listed damage, so strong lances didn't feel strong, and under the vanilla cap lances only left vanilla around 10 m/s, with a sharp bend. Taking vanilla's strike for the hit keeps vanilla's spread between weapons, and the curves control how much speed adds, shaped on the damage itself.
 - **Horse speed uses a soft cap rather than a flat cut**, so the fastest horses are slowed while slow horses stay comfortably above the 9 m/s couch minimum.
 
 ## Possible next levers
 
-- **Ranged damage vs. the cavalry nerf:** cavalry thrusts now deal roughly 50–90% of vanilla to players and horses are slower, while arrows, bolts and javelins only lost 15% (`pierce_missile`). Ranged may need its own balancing to stay fair against the weakened cavalry, for example a different `pierce_missile`, separate values per missile type, or the missile speed term.
-- **Missile headshots:** the missile pierce head/neck multiplier of 2.0 (`GetDamageMultiplierForBodyPart`).
+- **Ranged damage vs. the cavalry nerf:** cavalry thrusts were cut to roughly 50–90% of vanilla to players and horses are slower, while arrows, bolts and javelins only lost 15% (`pierce_missile`). Ranged may need its own balancing to stay fair against the weakened cavalry, for example a different `pierce_missile`, separate values per missile type, or the missile speed term.

@@ -36,7 +36,9 @@ public class MPBalancerSubModule : MBSubModuleBase
         if (GameNetwork.IsDedicatedServer && game.GameType is MultiplayerGame)
         {
             ItemWeightOverrides.Apply();
+            ThrustDamageOverrides.Apply();
             HorseHealthOverrides.Apply();
+            SmallShieldPerk.Apply();
         }
     }
 
@@ -48,10 +50,11 @@ public class MPBalancerSubModule : MBSubModuleBase
             ChatCommands.Attach();
             HitLog.Start(); // once, at the first mission
             mission.AddMissionBehavior(new ServerTickBehavior());
-            WeaponFactors.EnsureAutoReferences(); // logs the auto references once, at the first mission
             HorseCharge.ApplySpeedLimit(); // bump_speed lives in the Monster objects, read at each spawn
             ItemWeightOverrides.Apply(); // item weights live in the item objects, read at each spawn
+            ThrustDamageOverrides.Apply(); // thrust damage factors too, read at each hit
             HorseHealthOverrides.Apply(); // horse health too
+            SmallShieldPerk.Apply(); // perk templates, and the copies players hold
             NativeParameters.Apply();
         }
     }

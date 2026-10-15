@@ -4,16 +4,17 @@ A **server-side multiplayer balancing mod** for Mount & Blade II: Bannerlord. It
 
 What it changes (all tunable in-game, see [Tuning in-game](#tuning-in-game)):
 
-- **Melee pierce thrusts** follow a curve of "% of vanilla damage" by relative speed: 72% standing, falling to 46% at 20 m/s on players, and 100% → 70% on horses. Vanilla speed physics is left alone, so weapons keep their vanilla relation to each other (lances gain more from speed than spears).
-- **Armor**: on players, an armor curve on top of the speed curve makes unarmored body parts much more vulnerable and keeps heavy armor tanky (e.g. a Western lance head hit at 12 m/s: 105 unarmored, 74 at 20 armor, 50 at 53 armor).
-- **Weapons**: thrust damage scales a bit with the weapon's listed thrust damage within its group, lances get +15%, and individual weapons can be adjusted (the Aserai heavy lance is toned down by 15%).
-- **Missiles**: 85% of vanilla pierce damage. **Pierce on players** is soft-capped above 90 toward 130. **Swings** are vanilla (the target is pierce; cut damage was never the issue), with a `swing` setting kept for tests.
+- **Melee pierce thrusts** do a percentage of vanilla's damage for the same hit, by the closing speed along the thrust: close to the standing hit up to 4 m/s, then speed adds steadily up to about 13 m/s and less and less after (one curve for lances, one for spears and other weapons; the same for now). Vanilla's speed term grows with the square of the speed times the weapon's weight, so fast hits ran away; now they gain less, while vanilla's order between weapons (weight, thrust speed, speed bonus perks) stays. Never more than vanilla. Armor and body part apply as in vanilla (in multiplayer, armor is one value per class, the same on every body part).
+- **Missiles**: vanilla damage, but headshots (head and neck) on players do ×1.5 instead of ×2. **Pierce on players** is soft-capped above 90 toward 130. **Swings** are vanilla (the target is pierce; cut damage was never the issue), with a `swing` setting kept for tests.
+- **Anti-horse infantry perks** (Cavalry Breaker, Spearman, Farmer): their bonus damage against horses only counts with a polearm (the spear or pike they come with); vanilla applies it to any weapon, even thrown ones.
 - **Couched lances / braced polearms**: a curve that approaches 200 and never exceeds it.
 - **Horses**: top speeds compressed to about 12–14 m/s (vanilla about 13–16.6).
 - **Item weights**: the Khuzait Rabble's Curved Round Shield weighs 1 kg instead of 5 (it made the class the slowest infantry; item weights set movement speed in multiplayer).
 - **Horse health**: the Khuzait Steppe Horse and Tarpan have 215 health instead of 185, the Steppe Charger 245.
+- **Thrust damage** (active thrusts only; couches and braces stay vanilla): Battanian Long Spear 29+1; lances raised so each beats the plain spears: Khuzait Long Lance 29+7, Vlandian Heavy Lance 33+1, Sturgian Long Lance 31+6, Western Lance and Khuzait Lance 31+7, Bamboo Lance 30+5, Sturgian Lance 29+4, Vlandian Long Lance 29+5.
+- **Small Shield perk** (Khuzait light cavalry): gives two Steppe Guardian Shields instead of one, the second in the slot the class leaves free with this perk.
 
-[docs/mod-damage.md](docs/mod-damage.md) explains how the mod processes a hit: which path each kind of hit takes, where each setting applies, how the curves work, and what damage to expect. [docs/native-damage.md](docs/native-damage.md) describes the vanilla calculation it builds on.
+[docs/mod-damage.md](docs/mod-damage.md) explains how the mod processes a hit: which path each kind of hit takes, where each setting applies, how the curves work, and what damage to expect. [docs/native-damage.md](docs/native-damage.md) describes the vanilla calculation it builds on. `scripts/curve-editor.py` is a small window for editing the speed curves (`thrust_curve_spear`, `thrust_curve_lance`) point by point, 0–25 m/s: it saves them to `defaults.txt` or sends them to the running server. [docs/settings-history.md](docs/settings-history.md) records each set of defaults that was played, with the sessions and data behind it.
 
 ## Building
 
@@ -25,7 +26,7 @@ This compiles against the local Dedicated Server install's DLLs (override the pa
 
 ## Test server
 
-A Linux Dedicated Server reachable as `ssh aesten@7900x`. Its install is at `~/Steam/steamapps/common/Mount & Blade II Dedicated Server/`; the launch script, `token.txt` and logs are in `~/bannerlord/`.
+A Linux Dedicated Server reachable as `ssh bannerlord@7900x`. Its install is at `~/Steam/steamapps/common/Mount & Blade II Dedicated Server/`; the launch script, `token.txt` and logs are in `~/bannerlord/`.
 
 ```sh
 scripts/deploy.sh                              # build and install the module on the server
@@ -43,42 +44,47 @@ Admins (players who joined with the server's `AdminPassword`) can change setting
 
 ```
 !b                                  list settings and their values
-!b thrust_curve                     show one setting's value, default, vanilla value and description
-!b thrust_curve 0:70 4:61 20:45     set a curve (x:percent pairs; announced to everyone)
-!b thrust_spread 0.3                set a number
+!b thrust_curve_spear               show one setting's value, default, vanilla value and description
+!b thrust_curve_spear 0:100 4:100 12:80 20:57   set a curve (x:percent pairs; announced to everyone)
+!b thrust_curve_spear 100 100 ... 46   or a plain list of percentages, one per 1 m/s from 0 (scripts/curve-editor.py writes these)
+!b pierce_missile 0.8               set a number
 !b weapon_mult mp_aserai_heavy_lance:0.85 mp_western_long_lance:1.1    set per-weapon multipliers (or none)
 !b reset                            restore the mod's defaults
 !b vanilla                          vanilla behaviour, for A/B comparisons
-!b debug                            toggle a readout of every pierce hit you deal or take, and of bumps
+!b debug                            toggle a readout of every pierce hit you deal or take
 !b speedo                           toggle a once-per-second readout of your speed and top speed (your horse's, or yours on foot), as the server measures them
 !b speedo stats                     mounted: your horse's item stats, server stats and bump threshold; on foot: the weapons you carry with their weights, the server's speed multipliers (normal and in combat), the weapon weight it counts, and the time to top speed
 ```
 
-With MPManager on the server, these commands are routed through it (`src/MPBalancer/MPManagerLink.cs`): they're hidden from chat, MPManager's aliases and `!help` include them, and they work from the server console (`mpm cmd /b ...`). Without MPManager, MPBalancer hooks chat itself, as before.
+With MPManager on the server, these commands are routed through it (mpManager's shared `link/MPManagerLink.cs`, compiled in; the build expects the mpManager checkout next to this one, or `-p:MPManagerDir=...`): they're hidden from chat, MPManager's aliases and `!help` include them, they work from the server console (`mpm cmd /b ...`), and the server's permissions file decides who may run what. MPBalancer's defaults: what only shows something (`!b`, `!b <setting>`, `debug`, `speedo`) is open to everyone, changing settings (`!b <setting> <value>`, `reset`, `vanilla`) is for admins. Without MPManager, MPBalancer hooks chat itself, and only `!b debug` is open to everyone.
+
+Default values live in [src/MPBalancer/defaults.txt](src/MPBalancer/defaults.txt), built into the mod (change a value there, rebuild and deploy; `scripts/curve-editor.py` edits the speed curves there). The table shows them for reference.
 
 | Setting | Default | Vanilla | What it does |
 |---|---|---|---|
 | `swing` | 1 | 1 | scales the relative speed added to swings (vanilla by default) |
-| `thrust_curve` | `0:72 2:67 4:63 6:60 8:57 10:54 12:52 16:49 20:46` | `0:100` | melee pierce thrusts on players: % of vanilla damage by relative speed (m/s), interpolated between points |
-| `thrust_armor_curve` | `0:125 10:120 20:120 35:127 53:116` | `0:100` | melee pierce thrusts on players: extra % by the armor at the hit location, on top of `thrust_curve` |
-| `thrust_curve_horse` | `0:100 2:94 4:89 6:85 8:81 10:78 12:76 16:73 20:70` | `0:100` | melee pierce thrusts on horses: % of vanilla damage by relative speed |
-| `thrust_spread` | 0.5 | 0 | melee thrust damage × (weapon's listed thrust damage / `thrust_ref`) ^ this |
-| `thrust_ref` | 0 (auto) | – | listed thrust damage left unchanged; 0 = median of the weapon's group (usage class, lances separately; logged at startup) |
-| `lance` | 1.15 | 1 | extra multiplier on melee thrusts with lances (items that can couch) |
-| `weapon_mult` | `mp_aserai_heavy_lance:0.85` | `none` | extra multiplier on melee thrusts per weapon item id |
-| `pierce_missile` | 0.85 | 1 | multiplies pierce damage from arrows, bolts and thrown weapons |
+| `thrust_model` | 1 | 0 | 1 = melee pierce thrusts do a % of vanilla by closing speed (the curves below); 0 = vanilla |
+| `thrust_curve_spear` | 26 values, % of vanilla per m/s of closing speed: 100, 79, 64 at 0, 2, 4 m/s (close to the standing hit), 69% at 10, 67% at 13, 50% at 20, 40% at 25 | – | melee pierce thrusts with weapons that can't couch; also accepts speed:percent pairs |
+| `thrust_curve_lance` | the same as `thrust_curve_spear` for now | – | melee pierce thrusts with lances (weapons that can couch) |
+| `weapon_mult` | none | none | extra multiplier on melee pierce thrusts per weapon item id (item_id:multiplier pairs); capped at vanilla |
+| `pierce_missile` | 1 | 1 | multiplies pierce damage from arrows, bolts and thrown weapons |
+| `missile_head` | 1.5 | 2 | pierce missile damage multiplier on players' head and neck; applies to missiles fired after the change |
+| `missile_head_horse` | 1.2 | 1.2 | the same on horses (vanilla 1.2, as for any pierce hit to a horse's head) |
+| `mount_damage_polearm` | 1 | 0 | 1 = infantry perks' bonus against horses (Cavalry Breaker +100%, Spearman and Farmer +50-75%) only with polearms; 0 = any weapon. Ranged classes' perks (Hunter, Big Game Hunter, Poacher) are untouched |
 | `pierce_knee` / `pierce_cap` | 90 / 130 | off (1000) | pierce damage to players: unchanged up to the knee, then smoothly toward the cap |
 | `couch` | 1 | 1 | multiplies couch/brace damage, before the couch curve |
 | `couch_knee` / `couch_cap` | 0 / 200 | off | couch/brace curve; with knee 0 it's `200 × tanh(damage / 200)` |
 | `horse_speed` | 0.92 | 1 | multiplies horse top speed (applies to every horse immediately) |
 | `horse_knee` / `horse_cap` | 12.4 / 14.2 | off (1000) | horse top speeds (m/s) above the knee are compressed smoothly toward the cap; keep well above 9 (the couch minimum) |
-| `horse_maneuver` | 0.9 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
+| `horse_maneuver` | 0.95 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
 | `horse_accel_time` | 1 | 1 | multiplies the horse's `TopSpeedReachDuration` stat; by its name higher = slower acceleration, check the `[MPB-ACCEL]` log lines |
 | `horse_turn_keep_speed` | 0.6 | 0.6 | native: how sharp a horse can turn before losing its speed |
 | `couch_min_speed` | 9 | 9 | native: minimum horse speed (m/s) to couch |
 | `bump_speed` | 4.8 | 4.3 | minimum relative speed (m/s) for a horse bump; the engine also needs a running gait (lowest seen 5.9 m/s), so this can only raise the bar. Applies to horses spawned after the change |
 | `item_weight` | `mp_curved_round_shield:1` | none | item weight in kg per item id. In multiplayer, weapons and shields carried (more so held) slow their carrier; armor weight doesn't count. The Khuzait Rabble's Curved Round Shield (5 kg) made it the slowest infantry class. Applies to characters spawned after the change; clients predict their own movement with the vanilla weight |
+| `thrust_damage` | Battanian Long Spear 30 and the lances above (see `defaults.txt`) | none | listed thrust damage per weapon item id (its first thrusting usage; the others scale by the same ratio; couched and braced usages stay vanilla). Scales the weapon's thrust damage factor, so damage at every speed; applies to the next hit. Clients still list the vanilla number |
 | `horse_hp` | `mp_khuzait_horse_agile:215 mp_khuzait_horse:215 mp_khuzait_horse_charger:245` | none | total health per horse item id (vanilla: 200 plus the horse's extra health; these three Khuzait horses have 185). Applies to horses spawned after the change; a player's own horse health bar can show more than full until the horse is below its vanilla maximum |
+| `small_shields` | 2 | 1 | shields given by the Khuzait light cavalry's Small Shield perk; 2 adds a second one in Item3. Applies from the next spawn, in every mode, to players and their troops. Spawned characters and the pre-spawn preview show both; the class selection screen (built from each player's own files) still shows one |
 
 - "native" settings override engine parameters (`native_parameters.xml`) on the server only, through the engine's `override_native_parameter`; clients keep their own values, so test for snapping. They're only sent to the engine once changed from vanilla.
 - The thrust, missile and couch settings act on the damage the victim actually takes (after armor, body part and perks). Shield hits aren't affected.
@@ -92,9 +98,9 @@ With MPManager on the server, these commands are routed through it (`src/MPBalan
 Every damaging hit is recorded as a CSV row, one file per server run (`HitLog.cs`): `hits-<start>.csv` (only hits that damage a player or bot: damage type, source, body part hit, speeds, armor, vanilla and dealt damage, weapon and its listed thrust damage, both horses). Each row carries a `settings` number; `settings-<start>.csv` lists the balance values behind each number (a new one after every `!mpb` change), so hits can be compared per configuration, and against the vanilla damage of the same hits. The files go to `MPB_DATA_DIR` (mpManager's `run-server.sh` sets it to `~/bannerlord/metrics`, where earlier runs are gzipped and kept 30 days; without it, `Modules/MPBalancer/data`). Rows are queued by the combat code and written by a background thread once a second, so recording costs the server next to nothing. `!b speedo` readings still go to the log as `[MPB-SPEED]` / `[MPB-ACCEL]`. To summarize hits:
 
 ```sh
-ssh aesten@7900x 'cat $(ls -t ~/bannerlord/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py              # this run
-ssh aesten@7900x 'cat $(ls -t ~/bannerlord/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py --settings 2 # this run, configuration 2
-ssh aesten@7900x 'zcat ~/bannerlord/metrics/hits-*.csv.gz' | python scripts/hit-stats.py                            # earlier runs
+ssh bannerlord@7900x 'cat $(ls -t ~/bannerlord/instances/0/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py              # this run
+ssh bannerlord@7900x 'cat $(ls -t ~/bannerlord/instances/0/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py --settings 2 # this run, configuration 2
+ssh bannerlord@7900x 'zcat ~/bannerlord/instances/0/metrics/hits-*.csv.gz' | python scripts/hit-stats.py                            # earlier runs
 ```
 
 Settings numbers start over at each server run, so use `--settings` on one run's file.

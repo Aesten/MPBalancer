@@ -32,7 +32,8 @@ internal static class HitDebug
         }
     }
 
-    public static void Report(in AttackInformation attackInformation, in AttackCollisionData collisionData, DamageTypes damageType, float vanillaDamage, float beforeDamage, float finalDamage)
+    // closing: the closing speed along the thrust that the speed curve used (melee pierce thrusts), or -1.
+    public static void Report(in AttackInformation attackInformation, in AttackCollisionData collisionData, DamageTypes damageType, float vanillaDamage, float beforeDamage, float finalDamage, float closing)
     {
         // Only hits that land on a player or bot and deal damage (no shield blocks).
         if (collisionData.AttackBlockedWithShield || attackInformation.IsVictimAgentNull || finalDamage <= 0f)
@@ -63,15 +64,16 @@ internal static class HitDebug
             Before = beforeDamage,
             After = finalDamage,
             Weapon = attackInformation.AttackerWeapon.Item?.StringId ?? "none",
-            Stat = WeaponFactors.ThrustStat(in attackInformation),
+            Stat = Combat.ThrustStat(in attackInformation),
             AttackerSpeed = Combat.AttackerSpeed(in attackInformation),
             VictimSpeed = Combat.VictimSpeed(in attackInformation),
             AttackerHorse = Combat.HorseId(attackInformation.AttackerAgent),
             VictimHorse = Combat.HorseId(attackInformation.VictimAgent),
+            Closing = closing,
         });
 
-        // Bumps get their own readout (speed and knock outcome) from HorseCharge.Report; only pierce in chat (the
-        // other damage types stay vanilla); and the text is only built when someone has the readout on.
+        // Only pierce hits in chat (not bumps; the other damage types stay vanilla), and the text is only built when
+        // someone has the readout on.
         if (collisionData.IsHorseCharge || damageType != DamageTypes.Pierce || !AnyoneWatching)
         {
             return;
@@ -80,7 +82,7 @@ internal static class HitDebug
             ? Round(finalDamage) + " (= vanilla)"
             : "vanilla " + Round(vanillaDamage) + " -> " + Round(finalDamage);
         string text = TypeName(damageType) + (part != null ? ", " + part : "")
-            + " | " + relativeSpeed.ToString("0.0", CultureInfo.InvariantCulture) + " m/s"
+            + " | " + (closing >= 0f ? "closing " + closing.ToString("0.0", CultureInfo.InvariantCulture) : relativeSpeed.ToString("0.0", CultureInfo.InvariantCulture)) + " m/s"
             + " | armor " + MathF.Round(attackInformation.ArmorAmountFloat)
             + " | " + damage;
         Notify(attackInformation.AttackerAgent, attackInformation.VictimAgent, text);

@@ -41,6 +41,29 @@ internal static class Combat
 
     public static float VictimSpeed(in AttackInformation a) => VictimVelocity(in a).Length;
 
+    // The weapon's listed thrust damage for the grip in use (the number in the loadout), 0 without a weapon.
+    public static int ThrustStat(in AttackInformation attackInformation)
+    {
+        return attackInformation.AttackerWeapon.IsEmpty ? 0 : attackInformation.AttackerWeapon.GetModifiedThrustDamageForCurrentUsage();
+    }
+
+    // Lances: weapons with a couch usage (the Heavy Kontos only braces, so it's not one).
+    public static bool IsLance(ItemObject item)
+    {
+        if (item?.Weapons == null)
+        {
+            return false;
+        }
+        foreach (WeaponComponentData weapon in item.Weapons)
+        {
+            if (weapon.ItemUsage != null && weapon.ItemUsage.Contains("couch"))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // The horse an agent rides, or the horse itself; "none" on foot.
     public static string HorseId(Agent agent)
     {

@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using NetworkMessages.FromServer;
 using TaleWorlds.Core;
+using MPManagerLinking;
 using TaleWorlds.MountAndBlade;
 
 namespace MPBalancer;
@@ -76,7 +77,15 @@ internal static class ChatCommands
     {
         bool wasRouted = MPManagerLink.Routed;
         bool routed = MPManagerLink.TryRegister(new[] { "mpb", "b" }, "[<setting> [value] | reset | vanilla | debug | speedo [stats]]",
-            "MPBalancer settings: list them, show or change one, reset, vanilla values, or per-player readouts (debug: everyone).", adminOnly: false, Run);
+            "MPBalancer settings: list them, show or change one, reset, vanilla values, or per-player readouts.", adminOnly: true, Run);
+        if (routed)
+        {
+            // Defaults (the server's permissions file can change them): what only shows something is open to
+            // everyone; changing settings is for admins.
+            MPManagerLink.TryRegisterPermissions(
+                "mpb = everyone", "mpb * = everyone", "mpb * * = admin", "mpb reset = admin", "mpb vanilla = admin",
+                "mpb debug = everyone", "mpb speedo = everyone");
+        }
         if (routed && !wasRouted)
         {
             MPBalancerSubModule.Log("Chat commands routed through MPManager.");
@@ -131,23 +140,24 @@ internal static class ChatCommands
         {
             return;
         }
-        Handle(fromPeer, parts.Skip(1).ToArray(), text => Reply(fromPeer, text));
+        Handle(fromPeer, parts.Skip(1).ToArray(), text => Reply(fromPeer, text), checkRights: true);
     }
 
-    // Entry point when MPManager routes the command (registered as open to everyone; Handle checks admin rights).
-    // peer is null for the server console.
+    // Entry point when MPManager routes the command: it has already checked the caller's rights for these arguments
+    // (its permissions file, or the defaults registered above). peer is null for the server console.
     private static void Run(NetworkCommunicator peer, string[] args, Action<string> reply)
     {
-        Handle(peer, args, text => reply("[MPBalancer] " + text));
+        Handle(peer, args, text => reply("[MPBalancer] " + text), checkRights: false);
     }
 
-    // args: the words after "!mpb" (or "!b"). reply answers the caller.
-    private static void Handle(NetworkCommunicator peer, string[] args, Action<string> reply)
+    // args: the words after "!mpb" (or "!b"). reply answers the caller. checkRights: standalone (no MPManager), only
+    // "!b debug" is open to everyone.
+    private static void Handle(NetworkCommunicator peer, string[] args, Action<string> reply, bool checkRights)
     {
         string by = peer?.UserName ?? "console";
         string command = args.Length > 0 ? args[0].ToLowerInvariant() : "help";
         bool isAdmin = peer == null || peer.IsAdmin;
-        if (!isAdmin && command != "debug")
+        if (checkRights && !isAdmin && command != "debug")
         {
             reply("Only \"!b debug\" is open to everyone; the rest is for admins (join with the server's admin password).");
             return;

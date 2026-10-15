@@ -11,14 +11,11 @@ public class BalancedApplyDamageModel : MultiplayerAgentApplyDamageModel
     {
         float before = base.ApplyGeneralDamageModifiers(in attackInformation, in collisionData, baseDamage);
         DamageTypes damageType = Combat.EffectiveDamageType(in attackInformation, in collisionData);
-        // What vanilla would have dealt: undo the swing speed setting (see VanillaEstimate).
-        float vanilla = before * VanillaEstimate.ConsumeRatio(in attackInformation, in collisionData);
-        float damage = before;
-
-        if (collisionData.IsHorseCharge)
-        {
-            HorseCharge.Record(in attackInformation);
-        }
+        // What vanilla would have dealt: undo the swing speed setting and the thrust speed curves (see VanillaEstimate).
+        float vanilla = before * VanillaEstimate.ConsumeRatio(in attackInformation, in collisionData, out float closing)
+            * VanillaBodyPartRatio(in attackInformation, in collisionData) * ThrustDamageOverrides.VanillaRatio(in attackInformation, in collisionData);
+        // Infantry perks' bonus against horses, with polearms only (mount_damage_polearm).
+        float damage = MountDamagePerks.Adjust(in attackInformation, in collisionData, damageType, before);
 
         // Shield hits are damage to the shield, not to the player.
         if (!collisionData.AttackBlockedWithShield && !attackInformation.IsVictimAgentNull)
@@ -31,7 +28,11 @@ public class BalancedApplyDamageModel : MultiplayerAgentApplyDamageModel
             }
             else if (damageType == DamageTypes.Pierce)
             {
-                damage *= collisionData.IsMissile ? BalanceSettings.PierceMissile.Value : ThrustMultiplier(in attackInformation);
+                // Melee thrusts are shaped in the strike (BalancedStrikeMagnitudeModel); missiles here.
+                if (collisionData.IsMissile)
+                {
+                    damage *= BalanceSettings.PierceMissile.Value;
+                }
                 if (attackInformation.IsVictimAgentHuman)
                 {
                     damage = Combat.SoftCap(damage, BalanceSettings.PierceKnee.Value, BalanceSettings.PierceCap.Value);
@@ -39,31 +40,33 @@ public class BalancedApplyDamageModel : MultiplayerAgentApplyDamageModel
             }
         }
 
-        HitDebug.Report(in attackInformation, in collisionData, damageType, vanilla, before, damage);
+        HitDebug.Report(in attackInformation, in collisionData, damageType, vanilla, before, damage, closing);
         return damage;
     }
 
-    // Bumps: the knock decisions run right after the damage, in Mission.ChargeDamageCallback; the knockdown one
-    // comes last, so it reports the bump (speed and outcome) for the readout and the log.
-    public override bool DecideAgentKnockedDownByBlow(Agent attackerAgent, Agent victimAgent, in AttackCollisionData collisionData, WeaponComponentData attackerWeapon, in Blow blow)
+    // Vanilla's body part multiplier over ours for this hit (missile headshots), so the hit log's vanilla column is
+    // vanilla's: the multiplier scales the damage proportionally (MissionCombatMechanicsHelper.ComputeBlowDamage).
+    private float VanillaBodyPartRatio(in AttackInformation attackInformation, in AttackCollisionData collisionData)
     {
-        bool knockedDown = base.DecideAgentKnockedDownByBlow(attackerAgent, victimAgent, in collisionData, attackerWeapon, in blow);
-        if (collisionData.IsHorseCharge)
+        if (!collisionData.IsMissile || collisionData.AttackBlockedWithShield)
         {
-            HorseCharge.Report(attackerAgent, victimAgent, in collisionData, (blow.BlowFlag & BlowFlags.KnockBack) != 0, knockedDown);
+            return 1f;
         }
-        return knockedDown;
+        BoneBodyPartType part = collisionData.VictimHitBodyPart;
+        DamageTypes type = (DamageTypes)collisionData.DamageType;
+        float ours = GetDamageMultiplierForBodyPart(part, type, attackInformation.IsVictimAgentHuman, isMissile: true);
+        return ours > 0f ? base.GetDamageMultiplierForBodyPart(part, type, attackInformation.IsVictimAgentHuman, isMissile: true) / ours : 1f;
     }
 
-    // Melee pierce thrusts: % of vanilla by relative speed (and, on players, by armor at the hit location),
-    // times the weapon factors. Vanilla speed physics stays untouched, so weapons keep their vanilla relation
-    // to each other at every speed (lances gain more from speed than spears).
-    private static float ThrustMultiplier(in AttackInformation attackInformation)
+    // Missile headshots (head and neck, pierce): missile_head on players (vanilla 2), missile_head_horse on horses
+    // (vanilla 1.2, as for every pierce hit to a horse's head). Everything else is vanilla. The game reads this when it
+    // builds the hit, before the damage (AttackInformation.DamageMultiplierOfBone).
+    public override float GetDamageMultiplierForBodyPart(BoneBodyPartType bodyPart, DamageTypes type, bool isHuman, bool isMissile)
     {
-        float speed = Combat.RelativeSpeed(in attackInformation);
-        float curve = attackInformation.IsVictimAgentMount
-            ? BalanceSettings.ThrustCurveHorse.Evaluate(speed)
-            : BalanceSettings.ThrustCurve.Evaluate(speed) * BalanceSettings.ThrustArmorCurve.Evaluate(attackInformation.ArmorAmountFloat);
-        return curve * WeaponFactors.ThrustMultiplier(in attackInformation);
+        if (isMissile && type == DamageTypes.Pierce && (bodyPart == BoneBodyPartType.Head || bodyPart == BoneBodyPartType.Neck))
+        {
+            return isHuman ? BalanceSettings.MissileHead.Value : BalanceSettings.MissileHeadHorse.Value;
+        }
+        return base.GetDamageMultiplierForBodyPart(bodyPart, type, isHuman, isMissile);
     }
 }

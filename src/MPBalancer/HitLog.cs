@@ -13,7 +13,7 @@ namespace MPBalancer;
 // 30 days; without it, Modules/MPBalancer/data):
 //
 //   hits-<start>.csv      time, settings, type, src, part, victim, mounted, speed, bonus, armor, vanilla, before,
-//                         after, weapon, stat, aspeed, vspeed, ahorse, vhorse
+//                         after, weapon, stat, aspeed, vspeed, ahorse, vhorse, closing
 //                         (the old "[MPB-HIT]" log fields; vanilla = what the game would have dealt, before = the
 //                         damage before the final-stage settings, after = the damage dealt)
 //   settings-<start>.csv  time, settings, values: which balance settings each "settings" number stands for (a new
@@ -30,6 +30,7 @@ internal static class HitLog
         public string Type, Source, Part, Victim, Weapon, AttackerHorse, VictimHorse;
         public bool Mounted;
         public float Speed, Bonus, Armor, Vanilla, Before, After, AttackerSpeed, VictimSpeed;
+        public float Closing; // melee pierce thrusts: the closing speed along the thrust the speed curve used; else -1
         public int Stat;
     }
 
@@ -61,7 +62,7 @@ internal static class HitLog
             Directory.CreateDirectory(dir);
             string start = DateTime.UtcNow.ToString("yyyyMMdd-HHmmss", CultureInfo.InvariantCulture);
             _hits = Open(dir, "hits-" + start + ".csv",
-                "time,settings,type,src,part,victim,mounted,speed,bonus,armor,vanilla,before,after,weapon,stat,aspeed,vspeed,ahorse,vhorse");
+                "time,settings,type,src,part,victim,mounted,speed,bonus,armor,vanilla,before,after,weapon,stat,aspeed,vspeed,ahorse,vhorse,closing");
             _settings = Open(dir, "settings-" + start + ".csv", "time,settings,values");
             SettingsChanged();
             new Thread(WriteLoop) { IsBackground = true, Name = "MPBalancer hit log" }.Start();
@@ -137,7 +138,7 @@ internal static class HitLog
                     .Append(F1(h.Vanilla)).Append(',').Append(F1(h.Before)).Append(',').Append(F1(h.After)).Append(',')
                     .Append(h.Weapon).Append(',').Append(h.Stat).Append(',')
                     .Append(F1(h.AttackerSpeed)).Append(',').Append(F1(h.VictimSpeed)).Append(',')
-                    .Append(h.AttackerHorse).Append(',').Append(h.VictimHorse);
+                    .Append(h.AttackerHorse).Append(',').Append(h.VictimHorse).Append(',').Append(h.Closing >= 0f ? F1(h.Closing) : "");
                 _hits.WriteLine(line.ToString());
             }
             _hits.Flush();

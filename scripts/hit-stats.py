@@ -3,10 +3,10 @@
 [MPB-HIT] lines of older server logs.
 
 Usage:
-  ssh aesten@7900x 'cat $(ls -t ~/bannerlord/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py   (this run)
-  ssh aesten@7900x 'zcat ~/bannerlord/metrics/hits-*.csv.gz' | python scripts/hit-stats.py                  (earlier runs)
+  ssh bannerlord@7900x 'cat $(ls -t ~/bannerlord/instances/0/metrics/hits-*.csv | head -1)' | python scripts/hit-stats.py   (this run)
+  ssh bannerlord@7900x 'zcat ~/bannerlord/instances/0/metrics/hits-*.csv.gz' | python scripts/hit-stats.py                  (earlier runs)
   python scripts/hit-stats.py hits.csv [--settings N]
-  ssh aesten@7900x 'zgrep -h "\\[MPB-HIT\\]" ~/bannerlord/logs/server-*.log.gz' | python scripts/hit-stats.py   (old logs)
+  ssh bannerlord@7900x 'zgrep -h "\\[MPB-HIT\\]" ~/bannerlord/instances/0/logs/server-*.log.gz' | python scripts/hit-stats.py   (old logs)
 
 --settings N keeps only hits made with balance configuration N; settings-<start>.csv says which values each
 number stands for (a new number after every !mpb change). Without it, all configurations are mixed.

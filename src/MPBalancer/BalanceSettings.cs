@@ -33,16 +33,31 @@ public sealed class BalanceSetting : ISetting
     // Engine parameter this setting overrides (native_parameters.xml id), or null. See NativeParameters.
     public string NativeParameter { get; }
 
-    public BalanceSetting(string name, string description, float defaultValue, float min, float max, float vanilla = 1f, string nativeParameter = null)
+    // The default comes from defaults.txt (BalanceDefaults); vanilla if it's missing or invalid there.
+    public BalanceSetting(string name, string description, float min, float max, float vanilla = 1f, string nativeParameter = null)
     {
         NativeParameter = nativeParameter;
         Name = name;
         Description = description;
-        Default = defaultValue;
         Vanilla = vanilla;
         Min = min;
         Max = max;
-        Value = defaultValue;
+        string text = BalanceDefaults.Get(name);
+        if (text == null)
+        {
+            BalanceDefaults.Warn(name, "is missing");
+            Default = vanilla;
+        }
+        else if (!float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) || value < min || value > max)
+        {
+            BalanceDefaults.Warn(name, "has an invalid value '" + text + "'");
+            Default = vanilla;
+        }
+        else
+        {
+            Default = value;
+        }
+        Value = Default;
     }
 
     public string DisplayValue => Format(Value);
@@ -81,16 +96,33 @@ public sealed class BalanceCurve : ISetting
     public string DisplayDefault { get; }
     public string DisplayVanilla { get; }
 
-    public BalanceCurve(string name, string description, string defaultValue, string vanilla = "0:100")
+    // The default comes from defaults.txt (BalanceDefaults); vanilla if it's missing or invalid there.
+    public BalanceCurve(string name, string description, string vanilla = "0:100")
     {
         Name = name;
         Description = description;
-        DisplayDefault = defaultValue;
         DisplayVanilla = vanilla;
+        string text = BalanceDefaults.Get(name);
+        if (text == null || Parse(text, out _) == null)
+        {
+            BalanceDefaults.Warn(name, text == null ? "is missing" : "is invalid");
+            text = vanilla;
+        }
+        DisplayDefault = text;
         Reset();
     }
 
-    public string DisplayValue => string.Join(" ", _points.Select(p => BalanceSetting.Format(p.Speed) + ":" + BalanceSetting.Format(p.Percent)));
+    // As a plain list when the points are at 0, 1, 2 ... (the curve editor's format), otherwise as x:percent pairs.
+    public string DisplayValue
+    {
+        get
+        {
+            var points = _points;
+            bool plain = points.Length > 1 && points.Select((p, i) => p.Speed == i).All(b => b);
+            return plain ? string.Join(" ", points.Select(p => BalanceSetting.Format(p.Percent)))
+                : string.Join(" ", points.Select(p => BalanceSetting.Format(p.Speed) + ":" + BalanceSetting.Format(p.Percent)));
+        }
+    }
 
     public void Reset() => _points = Parse(DisplayDefault, out _);
 
@@ -127,18 +159,33 @@ public sealed class BalanceCurve : ISetting
         return points[points.Length - 1].Percent / 100f;
     }
 
+    // Either x:percent pairs ("0:72 4:63 20:46"), or a plain list of percentages, one per step of 1 starting at 0
+    // ("72 70 69 ..." = 0, 1, 2 ... m/s), as scripts/curve-editor.py writes it.
     private (float, float)[] Parse(string text, out string error)
     {
         var points = new List<(float, float)>();
-        foreach (string token in text.Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries))
+        string[] tokens = text.Split(new[] { ' ', ',', ';' }, StringSplitOptions.RemoveEmptyEntries);
+        bool plainList = tokens.Length > 0 && tokens.All(t => !t.Contains(':'));
+        for (int i = 0; i < tokens.Length; i++)
         {
+            string token = tokens[i];
+            if (plainList)
+            {
+                if (!float.TryParse(token, NumberStyles.Float, CultureInfo.InvariantCulture, out float value) || value < 0f || value > 500f)
+                {
+                    error = "Invalid percentage '" + token + "' for " + Name + ": a plain list is one percentage per step of 1 from 0, e.g. 72 70 69.";
+                    return null;
+                }
+                points.Add((i, value));
+                continue;
+            }
             string[] pair = token.Split(':');
             if (pair.Length != 2
                 || !float.TryParse(pair[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float speed)
                 || !float.TryParse(pair[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float percent)
                 || speed < 0f || percent < 0f || percent > 500f)
             {
-                error = "Invalid point '" + token + "' for " + Name + ": use x:percent pairs, e.g. 0:72 4:63 20:46.";
+                error = "Invalid point '" + token + "' for " + Name + ": use x:percent pairs (e.g. 0:72 4:63 20:46), or a plain list of percentages, one per step of 1 from 0.";
                 return null;
             }
             points.Add((speed, percent));
@@ -171,15 +218,22 @@ public sealed class BalanceTable : ISetting
     private readonly string _valueName, _example;
 
     // Values are 0.._max; valueName and example are for the error message ("multiplier", "mp_aserai_heavy_lance:0.85").
-    public BalanceTable(string name, string description, string defaultValue, float max = 5f, string valueName = "multiplier",
+    // The default comes from defaults.txt (BalanceDefaults); none if it's missing or invalid there.
+    public BalanceTable(string name, string description, float max = 5f, string valueName = "multiplier",
         string example = "mp_aserai_heavy_lance:0.85")
     {
         Name = name;
         Description = description;
-        DisplayDefault = defaultValue;
         _max = max;
         _valueName = valueName;
         _example = example;
+        string text = BalanceDefaults.Get(name);
+        if (text == null || Parse(text, out _) == null)
+        {
+            BalanceDefaults.Warn(name, text == null ? "is missing" : "is invalid");
+            text = "none";
+        }
+        DisplayDefault = text;
         Reset();
     }
 
@@ -238,120 +292,135 @@ public static class BalanceSettings
     // Vanilla by default: the balancing targets pierce, cut damage was never the issue.
     public static readonly BalanceSetting SwingSpeedBonus = new BalanceSetting("swing",
         "scales the attacker/victim relative speed fed into swing magnitude (1 = vanilla)",
-        1f, 0f, 5f);
+        0f, 5f);
 
-    // Melee pierce thrusts (BalancedApplyDamageModel): % of vanilla damage by speed and armor, then weapon factors.
-    public static readonly BalanceCurve ThrustCurve = new BalanceCurve("thrust_curve",
-        "melee pierce thrusts on players: % of vanilla damage by relative speed (speed:percent pairs)",
-        "0:72 2:67 4:63 6:60 8:57 10:54 12:52 16:49 20:46");
+    // Melee pierce thrusts (BalancedStrikeMagnitudeModel): vanilla's strength for the hit (perks included) times a
+    // percentage for the closing speed along the thrust, from these curves (lances: weapons with a couch usage);
+    // vanilla's armor and body part handling then apply as usual. 100% at low speed, falling with speed: vanilla's
+    // speed term grows with the square of the speed times the weapon's weight, so fast hits gain less than in vanilla.
+    public static readonly BalanceSetting ThrustModel = new BalanceSetting("thrust_model",
+        "1 = melee pierce thrusts do a % of vanilla by closing speed (thrust_curve_spear, thrust_curve_lance); 0 = vanilla",
+        0f, 1f, vanilla: 0f);
 
-    public static readonly BalanceCurve ThrustArmorCurve = new BalanceCurve("thrust_armor_curve",
-        "melee pierce thrusts on players: extra % by the armor at the hit location (armor:percent pairs), on top of thrust_curve",
-        "0:125 10:120 20:120 35:127 53:116");
+    public static readonly BalanceCurve ThrustCurveSpear = new BalanceCurve("thrust_curve_spear",
+        "melee pierce thrusts with non-lances: % of vanilla by closing speed along the thrust (one value per m/s from 0, or speed:percent pairs)");
 
-    public static readonly BalanceCurve ThrustCurveHorse = new BalanceCurve("thrust_curve_horse",
-        "melee pierce thrusts on horses: % of vanilla damage by relative speed (speed:percent pairs)",
-        "0:100 2:94 4:89 6:85 8:81 10:78 12:76 16:73 20:70");
-
-    public static readonly BalanceSetting ThrustSpread = new BalanceSetting("thrust_spread",
-        "melee thrust damage x (weapon's listed thrust damage / thrust_ref) ^ this; 0 = all weapons as in vanilla",
-        0.5f, 0f, 10f, vanilla: 0f);
-
-    public static readonly BalanceSetting ThrustReference = new BalanceSetting("thrust_ref",
-        "listed thrust damage that thrust_spread leaves unchanged; 0 = median of the weapon's usage class, lances and non-lances separately",
-        0f, 0f, 200f, vanilla: 0f);
-
-    public static readonly BalanceSetting LanceThrust = new BalanceSetting("lance",
-        "extra multiplier on melee thrusts with lances (items that can couch), on players and horses; couching uses couch",
-        1.15f, 0f, 5f);
+    public static readonly BalanceCurve ThrustCurveLance = new BalanceCurve("thrust_curve_lance",
+        "melee pierce thrusts with lances (weapons that can couch): % of vanilla by closing speed along the thrust (one value per m/s from 0, or speed:percent pairs)");
 
     public static readonly BalanceTable WeaponMultipliers = new BalanceTable("weapon_mult",
-        "extra multiplier on melee thrusts per weapon item id (item_id:multiplier pairs, or none)",
-        "mp_aserai_heavy_lance:0.85");
+        "extra multiplier on melee pierce thrusts per weapon item id (item_id:multiplier pairs, or none)");
 
     // Item weights (ItemWeightOverrides): what carrying and holding items costs in movement speed. Applies to characters
     // spawned after the change; clients keep the vanilla weight for their own movement prediction.
     public static readonly BalanceTable ItemWeights = new BalanceTable("item_weight",
         "item weight in kg per item id (item_id:kg pairs, or none); weapons and shields slow their carrier, armor doesn't in multiplayer",
-        "mp_curved_round_shield:1", max: 100f, valueName: "kg", example: "mp_curved_round_shield:1");
+        max: 100f, valueName: "kg", example: "mp_curved_round_shield:1");
+
+    // Weapons' listed thrust damage (ThrustDamageOverrides): scales the usage's thrust damage factor, so damage at every
+    // speed. Applies to the next hit.
+    public static readonly BalanceTable ThrustDamage = new BalanceTable("thrust_damage",
+        "listed thrust damage per weapon item id (item_id:damage pairs, or none), first thrusting usage; its other usages scale alike",
+        max: 200f, valueName: "damage", example: "mp_battania_long_spear:31");
 
     // Horse health (HorseHealthOverrides): total health per horse item. Applies to horses spawned after the change.
     public static readonly BalanceTable HorseHealth = new BalanceTable("horse_hp",
         "total health per horse item id (item_id:hp pairs, or none); vanilla is 200 plus the horse's extra health",
-        "mp_khuzait_horse_agile:215 mp_khuzait_horse:215 mp_khuzait_horse_charger:245", max: 2000f, valueName: "hp",
+        max: 2000f, valueName: "hp",
         example: "mp_khuzait_horse:215");
+
+    // Khuzait light cavalry's Small Shield perk (SmallShieldPerk): 2 = a second shield in the free Item3 slot.
+    // Applies from the next spawn.
+    public static readonly BalanceSetting SmallShields = new BalanceSetting("small_shields",
+        "shields given by the Khuzait light cavalry's Small Shield perk (1 = vanilla, 2 = a second shield in Item3)",
+        1f, 2f);
 
     // Missiles and the pierce soft cap (BalancedApplyDamageModel).
     public static readonly BalanceSetting PierceMissile = new BalanceSetting("pierce_missile",
         "multiplies final pierce damage from arrows, bolts and thrown weapons",
-        0.85f, 0f, 5f);
+        0f, 5f);
+
+    // Missile headshots (BalancedApplyDamageModel.GetDamageMultiplierForBodyPart): head and neck pierce multipliers.
+    // Apply to missiles fired after the change.
+    public static readonly BalanceSetting MissileHead = new BalanceSetting("missile_head",
+        "pierce missile damage multiplier on players' head and neck",
+        0f, 5f, vanilla: 2f);
+
+    public static readonly BalanceSetting MissileHeadHorse = new BalanceSetting("missile_head_horse",
+        "pierce missile damage multiplier on horses' head and neck",
+        0f, 5f, vanilla: 1.2f);
+
+    // Infantry perks' bonus damage against horses only with polearms (MountDamagePerks).
+    public static readonly BalanceSetting MountDamagePolearm = new BalanceSetting("mount_damage_polearm",
+        "1 = infantry perks' bonus against horses (Cavalry Breaker, Spearman, Farmer) only applies with polearms; 0 = any weapon (vanilla)",
+        0f, 1f, vanilla: 0f);
 
     public static readonly BalanceSetting PierceKnee = new BalanceSetting("pierce_knee",
         "pierce damage to players above this is compressed smoothly toward pierce_cap",
-        90f, 0f, 1000f, vanilla: 1000f);
+        0f, 1000f, vanilla: 1000f);
 
     public static readonly BalanceSetting PierceCap = new BalanceSetting("pierce_cap",
         "pierce damage to players never exceeds this",
-        130f, 0f, 1000f, vanilla: 1000f);
+        0f, 1000f, vanilla: 1000f);
 
     // Couched lances and braced polearms (BalancedApplyDamageModel).
     public static readonly BalanceSetting Couch = new BalanceSetting("couch",
         "multiplies final damage from couched lances and braced polearms, before the couch curve",
-        1f, 0f, 5f);
+        0f, 5f);
 
     public static readonly BalanceSetting CouchKnee = new BalanceSetting("couch_knee",
         "couch/brace damage above this is compressed smoothly toward couch_cap (0 = curve starts at 0)",
-        0f, 0f, 1000f, vanilla: 1000f);
+        0f, 1000f, vanilla: 1000f);
 
     public static readonly BalanceSetting CouchCap = new BalanceSetting("couch_cap",
         "couch/brace damage never exceeds this",
-        200f, 0f, 1000f, vanilla: 1000f);
+        0f, 1000f, vanilla: 1000f);
 
     // Horse top speed (BalancedAgentStatModel); changes apply to every horse immediately.
     public static readonly BalanceSetting HorseSpeed = new BalanceSetting("horse_speed",
         "multiplies horse top speed",
-        0.92f, 0.1f, 2f);
+        0.1f, 2f);
 
     public static readonly BalanceSetting HorseKnee = new BalanceSetting("horse_knee",
         "horse top speeds (m/s, after horse_speed) above this are compressed smoothly toward horse_cap",
-        12.4f, 0f, 1000f, vanilla: 1000f);
+        0f, 1000f, vanilla: 1000f);
 
     public static readonly BalanceSetting HorseCap = new BalanceSetting("horse_cap",
         "horse top speed (m/s) never exceeds this; keep well above 9, the minimum speed to hold a couched lance",
-        14.2f, 0f, 1000f, vanilla: 1000f);
+        0f, 1000f, vanilla: 1000f);
 
     // Horse handling (BalancedAgentStatModel); changes apply to every horse immediately.
     public static readonly BalanceSetting HorseManeuver = new BalanceSetting("horse_maneuver",
         "multiplies horse maneuver (turning)",
-        0.9f, 0.1f, 3f);
+        0.1f, 3f);
 
     public static readonly BalanceSetting HorseAccelTime = new BalanceSetting("horse_accel_time",
         "multiplies the horse's TopSpeedReachDuration stat (vanilla 0.15-0.7); by its name higher = slower to reach top speed, check the [MPB-ACCEL] log",
-        1f, 0.1f, 5f);
+        0.1f, 5f);
 
     // Engine (native) parameters, overridden live on the server (NativeParameters). Clients keep their own
     // values, so watch for snapping.
     public static readonly BalanceSetting HorseTurnKeepVelocity = new BalanceSetting("horse_turn_keep_speed",
         "native quadrupedal_delta_rotation_threshold_for_keeping_local_velocity: how sharp a horse can turn before losing its speed",
-        0.6f, 0f, 10f, vanilla: 0.6f, nativeParameter: "quadrupedal_delta_rotation_threshold_for_keeping_local_velocity");
+        0f, 10f, vanilla: 0.6f, nativeParameter: "quadrupedal_delta_rotation_threshold_for_keeping_local_velocity");
 
     public static readonly BalanceSetting CouchMinSpeed = new BalanceSetting("couch_min_speed",
         "native mounted_passive_action_minimum_speed: minimum horse speed (m/s) to couch a lance",
-        9f, 0f, 50f, vanilla: 9f, nativeParameter: "mounted_passive_action_minimum_speed");
+        0f, 50f, vanilla: 9f, nativeParameter: "mounted_passive_action_minimum_speed");
 
     // Horse charges ("bumps", HorseCharge). The engine also requires a running gait, so this only raises the bar.
     public static readonly BalanceSetting BumpSpeed = new BalanceSetting("bump_speed",
         "minimum relative speed (m/s) for a horse to bump someone (camels keep their +16%); applies to horses spawned after the change",
-        4.8f, 0f, 50f, vanilla: 4.3f);
+        0f, 50f, vanilla: 4.3f);
 
     public static readonly IReadOnlyList<ISetting> All = new ISetting[]
     {
         SwingSpeedBonus,
-        ThrustCurve, ThrustArmorCurve, ThrustCurveHorse, ThrustSpread, ThrustReference, LanceThrust, WeaponMultipliers,
-        PierceMissile, PierceKnee, PierceCap,
+        ThrustModel, ThrustCurveSpear, ThrustCurveLance, WeaponMultipliers,
+        PierceMissile, MissileHead, MissileHeadHorse, MountDamagePolearm, PierceKnee, PierceCap,
         Couch, CouchKnee, CouchCap,
         HorseSpeed, HorseKnee, HorseCap, HorseManeuver, HorseAccelTime, HorseTurnKeepVelocity, CouchMinSpeed,
-        BumpSpeed, ItemWeights, HorseHealth,
+        BumpSpeed, ItemWeights, ThrustDamage, HorseHealth, SmallShields,
     };
 
     // Re-applies settings that are baked into agents rather than read on every hit.
@@ -361,7 +430,9 @@ public static class BalanceSettings
         HorseCharge.ApplySpeedLimit();
         NativeParameters.Apply();
         ItemWeightOverrides.Apply();
+        ThrustDamageOverrides.Apply();
         HorseHealthOverrides.Apply();
+        SmallShieldPerk.Apply();
         HitLog.SettingsChanged(); // later hits are logged under a new settings number
     }
 
