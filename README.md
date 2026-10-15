@@ -5,7 +5,7 @@ A **server-side multiplayer balancing mod** for Mount & Blade II: Bannerlord. It
 What it changes (all tunable in-game, see [Tuning in-game](#tuning-in-game)):
 
 - **Melee pierce thrusts** do a percentage of vanilla's damage for the same hit, by the closing speed along the thrust: close to the standing hit up to 4 m/s, then speed adds steadily up to about 13 m/s and less and less after (one curve for lances, one for spears and other weapons; the same for now). Vanilla's speed term grows with the square of the speed times the weapon's weight, so fast hits ran away; now they gain less, while vanilla's order between weapons (weight, thrust speed, speed bonus perks) stays. Never more than vanilla. Armor and body part apply as in vanilla (in multiplayer, armor is one value per class, the same on every body part).
-- **Missiles**: vanilla damage, but headshots (head and neck) on players do ×1.5 instead of ×2. **Pierce on players** is soft-capped above 90 toward 130. **Swings** are vanilla (the target is pierce; cut damage was never the issue), with a `swing` setting kept for tests.
+- **Missiles**: vanilla damage, but headshots (head and neck) on players do ×1.5 instead of ×2. **Swings** are vanilla (the target is pierce; cut damage was never the issue), with a `swing` setting kept for tests.
 - **Anti-horse infantry perks** (Cavalry Breaker, Spearman, Farmer): their bonus damage against horses only counts with a polearm (the spear or pike they come with); vanilla applies it to any weapon, even thrown ones.
 - **Couched lances / braced polearms**: a curve that approaches 200 and never exceeds it.
 - **Horses**: top speeds compressed to about 12–14 m/s (vanilla about 13–16.6).
@@ -64,19 +64,21 @@ Default values live in [src/MPBalancer/defaults.txt](src/MPBalancer/defaults.txt
 |---|---|---|---|
 | `swing` | 1 | 1 | scales the relative speed added to swings (vanilla by default) |
 | `thrust_model` | 1 | 0 | 1 = melee pierce thrusts do a % of vanilla by closing speed (the curves below); 0 = vanilla |
-| `thrust_curve_spear` | 26 values, % of vanilla per m/s of closing speed: 100, 79, 64 at 0, 2, 4 m/s (close to the standing hit), 69% at 10, 67% at 13, 50% at 20, 40% at 25 | – | melee pierce thrusts with weapons that can't couch; also accepts speed:percent pairs |
+| `thrust_curve_spear` | 26 values, % of vanilla per m/s of closing speed: 100, 80, 76 at 0, 2, 4 m/s (close to the standing hit), 78-79% from 6 to 10, 72% at 13, 53% at 20, 42% at 25 | – | melee pierce thrusts with weapons that can't couch; also accepts speed:percent pairs |
 | `thrust_curve_lance` | the same as `thrust_curve_spear` for now | – | melee pierce thrusts with lances (weapons that can couch) |
+| `thrust_curve_foot` | the 12-13 October baseline's player curve per m/s: 72% standing, 63% at 4 m/s, 54% at 10, 46% from 20 | – | melee pierce thrusts by attackers on foot (infantry, archers in melee, dismounted cavalry), every weapon |
+| `thrust_horse` | 1.15 | 1 | extra multiplier on melee pierce thrusts on horses, on top of the curves (capped at vanilla) |
 | `weapon_mult` | none | none | extra multiplier on melee pierce thrusts per weapon item id (item_id:multiplier pairs); capped at vanilla |
 | `pierce_missile` | 1 | 1 | multiplies pierce damage from arrows, bolts and thrown weapons |
 | `missile_head` | 1.5 | 2 | pierce missile damage multiplier on players' head and neck; applies to missiles fired after the change |
 | `missile_head_horse` | 1.2 | 1.2 | the same on horses (vanilla 1.2, as for any pierce hit to a horse's head) |
 | `mount_damage_polearm` | 1 | 0 | 1 = infantry perks' bonus against horses (Cavalry Breaker +100%, Spearman and Farmer +50-75%) only with polearms; 0 = any weapon. Ranged classes' perks (Hunter, Big Game Hunter, Poacher) are untouched |
-| `pierce_knee` / `pierce_cap` | 90 / 130 | off (1000) | pierce damage to players: unchanged up to the knee, then smoothly toward the cap |
+| `pierce_knee` / `pierce_cap` | off (1000) | off (1000) | pierce damage to players: unchanged up to the knee, then smoothly toward the cap. Off since every class has 100 health; with team damage at 50% it would stop one-hit team kills |
 | `couch` | 1 | 1 | multiplies couch/brace damage, before the couch curve |
 | `couch_knee` / `couch_cap` | 0 / 200 | off | couch/brace curve; with knee 0 it's `200 × tanh(damage / 200)` |
 | `horse_speed` | 0.92 | 1 | multiplies horse top speed (applies to every horse immediately) |
 | `horse_knee` / `horse_cap` | 12.4 / 14.2 | off (1000) | horse top speeds (m/s) above the knee are compressed smoothly toward the cap; keep well above 9 (the couch minimum) |
-| `horse_maneuver` | 0.95 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
+| `horse_maneuver` | 1 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
 | `horse_accel_time` | 1 | 1 | multiplies the horse's `TopSpeedReachDuration` stat; by its name higher = slower acceleration, check the `[MPB-ACCEL]` log lines |
 | `horse_turn_keep_speed` | 0.6 | 0.6 | native: how sharp a horse can turn before losing its speed |
 | `couch_min_speed` | 9 | 9 | native: minimum horse speed (m/s) to couch |
@@ -111,7 +113,7 @@ Settings numbers start over at each server run, so use `--settings` on one run's
   - `MPBalancerSubModule.cs` — registers the replacement models for multiplayer games.
   - `Models/` — `BalancedApplyDamageModel` (thrust/missile/couch curves on the final damage), `BalancedStrikeMagnitudeModel` (swing speed bonus), `BalancedAgentStatModel` (horse top speed).
   - `BalanceSettings.cs` — all settings with defaults, vanilla values and ranges; number, curve and table setting types.
-  - `WeaponFactors.cs` — weapon spread, lance and per-weapon multipliers. `Combat.cs` — shared helpers (speeds, soft cap, damage type).
+  - `ThrustDamageOverrides.cs`, `ItemWeightOverrides.cs`, `HorseHealthOverrides.cs`, `SmallShieldPerk.cs`, `MountDamagePerks.cs` — the item and perk changes. `Combat.cs` — shared helpers (speeds, soft cap, damage type).
   - `ChatCommands.cs`, `HitDebug.cs`, `Speedometer.cs` — admin commands, hit log/readout, speedometer (mounted and on foot). `ServerTickBehavior.cs` sends their chat output on the mission tick. `VanillaEstimate.cs` — the vanilla damage shown in the hit log.
 - `module/SubModule.xml` — module definition, copied into `dist/` on build. `ModuleCategory="Server"` keeps the module from being advertised to clients; `DedicatedServerType="all"` loads it on any dedicated server type but never on a game client.
 - `docs/mod-damage.md` — how the mod processes a hit, where each setting applies, curves, expected damage. `docs/native-damage.md` — the vanilla damage calculation, horse speed and couching rules.

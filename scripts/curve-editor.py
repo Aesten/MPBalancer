@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Editor for MPBalancer's speed curves (thrust_curve_spear, thrust_curve_lance for weapons that can couch): a melee
+"""Editor for MPBalancer's speed curves (mounted: thrust_curve_spear, thrust_curve_lance for weapons that can couch;
+thrust_curve_foot for attackers on foot): a melee
 thrust does this % of vanilla's damage for the same hit at its closing speed along the thrust, 0 to 25 m/s in steps of
 1 m/s. 100% = vanilla (the mod never goes above it).
 
@@ -25,7 +26,8 @@ MAX_SPEED = 25
 SPEEDS = list(range(MAX_SPEED + 1))
 HOST = os.environ.get("MPM_HOST", "bannerlord@7900x")
 DEFAULTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "src", "MPBalancer", "defaults.txt")
-CURVES = {"thrust_curve_spear": "Melee thrusts, spears and other non-lances", "thrust_curve_lance": "Melee thrusts, lances"}
+CURVES = {"thrust_curve_spear": "Mounted thrusts, spears and other non-lances", "thrust_curve_lance": "Mounted thrusts, lances",
+          "thrust_curve_foot": "Thrusts on foot (infantry, archers, dismounted cavalry)"}
 STEP = 0.5
 Y_LIMIT = 500  # the mod's maximum per point
 W, H, PAD_L, PAD_R, PAD_T, PAD_B = 900, 380, 50, 20, 20, 40  # initial chart size; it follows the window

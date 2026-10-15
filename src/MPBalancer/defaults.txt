@@ -11,14 +11,23 @@ swing = 1
 # included) by the closing speed along the thrust; armor and body part then apply as in vanilla. 0 = vanilla.
 thrust_model = 1
 
-# Speed curves: % of vanilla, one value per m/s of closing speed from 0 to 25 (beyond 25: the last value). Weapons
-# that can't couch, then lances (both the same for now). Shaped on the damage, not on vanilla: within a couple of
-# points of the standing hit up to 4 m/s (vanilla already gains 60-90% there), then rising faster and faster up to
-# about 9 m/s and flattening after 13 (the % dips near 4 m/s and rises again to 10 because vanilla jumps at low speed).
-# Fitted on the Aserai Heavy Lance: head hit on armor 55 at 13.1 m/s does 72 (vanilla 107). Damage never goes below
-# the standing hit and still rises with speed. Never above 100% (capped per hit).
-thrust_curve_spear = 100 88.7 79.2 71.1 64.2 62.5 62.8 64.3 66.2 67.9 69 69.1 68.5 67.2 65.3 63.1 60.6 58.1 55.5 52.9 50.4 48 45.7 43.6 41.5 39.6
-thrust_curve_lance = 100 88.7 79.2 71.1 64.2 62.5 62.8 64.3 66.2 67.9 69 69.1 68.5 67.2 65.3 63.1 60.6 58.1 55.5 52.9 50.4 48 45.7 43.6 41.5 39.6
+# Speed curves, mounted attackers: % of vanilla, one value per m/s of closing speed from 0 to 25 (beyond 25: the last
+# value). Weapons that can't couch, then lances (both the same for now). Shaped on the damage, not on vanilla: close to the standing
+# hit up to about 2 m/s (vanilla already gains a lot at low speed), +30% by 4 m/s, a steady rise to about 13 m/s, then
+# flattening (the % dips at low speed and rises again because vanilla jumps at low speed). Fitted on the Aserai Heavy
+# Lance: head hit on armor 55 at 13.1 m/s does 77 (vanilla 107). Damage never goes below the standing hit and still
+# rises with speed. Never above 100% (capped per hit).
+thrust_curve_spear = 100 88.7 79.8 76.4 75.8 76.6 77.8 78.8 79.2 78.9 77.9 76.3 74.3 71.9 69.3 66.6 63.8 61 58.3 55.7 53.1 50.7 48.4 46.2 44.1 42.1
+thrust_curve_lance = 100 88.7 79.8 76.4 75.8 76.6 77.8 78.8 79.2 78.9 77.9 76.3 74.3 71.9 69.3 66.6 63.8 61 58.3 55.7 53.1 50.7 48.4 46.2 44.1 42.1
+
+# On foot (infantry, archers in melee, dismounted cavalry), every weapon: the 12-13 October baseline's thrust_curve
+# (0:72 2:67 4:63 6:60 8:57 10:54 12:52 16:49 20:46), interpolated per m/s. Alone it's weaker than those matches were
+# (their armor curve added 16-27%): about 72% of vanilla standing, 63% at 4 m/s.
+thrust_curve_foot = 72 69.5 67 65 63 61.5 60 58.5 57 55.5 54 53 52 51.25 50.5 49.75 49 48.25 47.5 46.75 46 46 46 46 46 46
+
+# Thrusts on horses: x this on top of the curves (capped at vanilla), as the curves were set on players. 1.15 puts
+# them at about 88-92% of vanilla from 4 to 14 m/s, near the 12-13 October baseline.
+thrust_horse = 1.15
 
 # Per-weapon multipliers on thrusts (item_id:multiplier), or none: for exceptions. Capped at vanilla like the curves.
 weapon_mult = none
@@ -33,8 +42,10 @@ missile_head_horse = 1.2
 # weapons those perks come with; vanilla applies it to any weapon.
 mount_damage_polearm = 1
 
-pierce_knee = 90
-pierce_cap = 130
+# Pierce soft cap on players: off (vanilla). Every class has 100 health, so it hardly changed kills; it only
+# compressed big hits in the stats and capped team hits (90 -> 130 until 15 October).
+pierce_knee = 1000
+pierce_cap = 1000
 
 couch = 1
 couch_knee = 0
@@ -43,7 +54,7 @@ couch_cap = 200
 horse_speed = 0.92
 horse_knee = 12.4
 horse_cap = 14.2
-horse_maneuver = 0.95
+horse_maneuver = 1
 horse_accel_time = 1
 horse_turn_keep_speed = 0.6
 couch_min_speed = 9

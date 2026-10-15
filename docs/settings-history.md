@@ -25,7 +25,14 @@ armor and body part apply after it (`docs/mod-damage.md`, "Melee thrusts"). Defa
   29+5. With one curve for spears and lances, Line Breaker spears had passed most lances; these put every lance
   above plain spears (12 m/s head hit on armor 55: lances 54-67, Line Breaker spears 56, plain spears 37-46).
 - 15 October: `pierce_missile` 1 (was 0.85); new `missile_head = 1.5` (missile headshots on players, vanilla 2),
-  `missile_head_horse = 1.2` (vanilla), `mount_damage_polearm = 1` (infantry anti-horse perks only with polearms).
+  `missile_head_horse = 1.2` (vanilla), `mount_damage_polearm = 1` (infantry anti-horse perks only with polearms);
+  pierce soft cap off (`pierce_knee`/`pierce_cap` 1000, were 90/130: every class has 100 health); `horse_maneuver` 1
+  (vanilla; was 0.95). New curve (steadier rise from 2 m/s, +5 at speed: Aserai Heavy Lance 77 on a head,
+  armor 55, 13.1 m/s): `100 88.7 79.8 76.4 75.8 76.6 77.8 78.8 79.2 78.9 77.9 76.3 74.3 71.9 69.3 66.6 63.8 61
+  58.3 55.7 53.1 50.7 48.4 46.2 44.1 42.1`; new `thrust_horse = 1.15` (thrusts on horses were 5-18% below the
+  baseline matches with the player curves). New `thrust_curve_foot`: thrusts by attackers on foot use the baseline's
+  `thrust_curve` (0:72 2:67 4:63 6:60 8:57 10:54 12:52 16:49 20:46) per m/s, without its armor curve (weaker than
+  then); before, they used the mounted spear curve.
 - New `small_shields = 2`: the Khuzait light cavalry's Small Shield perk gives two shields.
 - Removed: `thrust_armor_curve`, `thrust_spread`, `thrust_ref`, `lance` (corrections for vanilla's speed² × weight
   term, which the curves now handle). `weapon_mult` default `none`.

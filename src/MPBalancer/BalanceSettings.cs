@@ -299,14 +299,21 @@ public static class BalanceSettings
     // vanilla's armor and body part handling then apply as usual. 100% at low speed, falling with speed: vanilla's
     // speed term grows with the square of the speed times the weapon's weight, so fast hits gain less than in vanilla.
     public static readonly BalanceSetting ThrustModel = new BalanceSetting("thrust_model",
-        "1 = melee pierce thrusts do a % of vanilla by closing speed (thrust_curve_spear, thrust_curve_lance); 0 = vanilla",
+        "1 = melee pierce thrusts do a % of vanilla by closing speed (thrust_curve_spear, thrust_curve_lance, thrust_curve_foot); 0 = vanilla",
         0f, 1f, vanilla: 0f);
 
     public static readonly BalanceCurve ThrustCurveSpear = new BalanceCurve("thrust_curve_spear",
-        "melee pierce thrusts with non-lances: % of vanilla by closing speed along the thrust (one value per m/s from 0, or speed:percent pairs)");
+        "mounted melee pierce thrusts with non-lances: % of vanilla by closing speed along the thrust (one value per m/s from 0, or speed:percent pairs)");
 
     public static readonly BalanceCurve ThrustCurveLance = new BalanceCurve("thrust_curve_lance",
-        "melee pierce thrusts with lances (weapons that can couch): % of vanilla by closing speed along the thrust (one value per m/s from 0, or speed:percent pairs)");
+        "mounted melee pierce thrusts with lances (weapons that can couch): % of vanilla by closing speed along the thrust (one value per m/s from 0, or speed:percent pairs)");
+
+    public static readonly BalanceCurve ThrustCurveFoot = new BalanceCurve("thrust_curve_foot",
+        "melee pierce thrusts by attackers on foot (infantry, archers in melee, dismounted cavalry): % of vanilla by closing speed along the thrust (one value per m/s from 0, or speed:percent pairs)");
+
+    public static readonly BalanceSetting ThrustHorse = new BalanceSetting("thrust_horse",
+        "extra multiplier on melee pierce thrusts on horses, on top of the curves (capped at vanilla)",
+        0f, 5f);
 
     public static readonly BalanceTable WeaponMultipliers = new BalanceTable("weapon_mult",
         "extra multiplier on melee pierce thrusts per weapon item id (item_id:multiplier pairs, or none)");
@@ -416,7 +423,7 @@ public static class BalanceSettings
     public static readonly IReadOnlyList<ISetting> All = new ISetting[]
     {
         SwingSpeedBonus,
-        ThrustModel, ThrustCurveSpear, ThrustCurveLance, WeaponMultipliers,
+        ThrustModel, ThrustCurveSpear, ThrustCurveLance, ThrustCurveFoot, ThrustHorse, WeaponMultipliers,
         PierceMissile, MissileHead, MissileHeadHorse, MountDamagePolearm, PierceKnee, PierceCap,
         Couch, CouchKnee, CouchCap,
         HorseSpeed, HorseKnee, HorseCap, HorseManeuver, HorseAccelTime, HorseTurnKeepVelocity, CouchMinSpeed,
