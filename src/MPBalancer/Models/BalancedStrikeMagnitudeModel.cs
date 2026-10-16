@@ -4,7 +4,7 @@ using TaleWorlds.MountAndBlade;
 
 namespace MPBalancer.Models;
 
-// Swings: scales the speed bonus (the swing setting). Melee pierce thrusts: a percentage of vanilla's strength.
+// Melee pierce thrusts: a percentage of vanilla's strength (swings are vanilla).
 //
 // Vanilla's thrust strength is 0.0625 x (weapon weight + 2.5) x (thrust speed + closing speed / 2)^2 x the weapon's
 // thrust damage factor (the weapon's listed thrust damage is exactly that with no closing speed, Crafting
@@ -20,18 +20,6 @@ namespace MPBalancer.Models;
 // bonus" re-runs this with extraLinearSpeed = 0, so it shows the bonus over standing still.
 public class BalancedStrikeMagnitudeModel : MultiplayerStrikeMagnitudeModel
 {
-    public override float CalculateStrikeMagnitudeForSwing(in AttackInformation attackInformation, in AttackCollisionData collisionData, in MissionWeapon weapon, float swingSpeed, float impactPoint, float extraLinearSpeed)
-    {
-        float ours = base.CalculateStrikeMagnitudeForSwing(in attackInformation, in collisionData, in weapon, swingSpeed, impactPoint, extraLinearSpeed * BalanceSettings.SwingSpeedBonus.Value);
-        if (extraLinearSpeed != 0f)
-        {
-            // Also compute the vanilla magnitude, so the hit log can show what vanilla would have done.
-            float vanilla = base.CalculateStrikeMagnitudeForSwing(in attackInformation, in collisionData, in weapon, swingSpeed, impactPoint, extraLinearSpeed);
-            VanillaEstimate.Record(in attackInformation, in collisionData, ours, vanilla);
-        }
-        return ours;
-    }
-
     public override float CalculateStrikeMagnitudeForThrust(in AttackInformation attackInformation, in AttackCollisionData collisionData, in MissionWeapon weapon, float thrustWeaponSpeed, float extraLinearSpeed, bool isThrown = false)
     {
         float vanilla = base.CalculateStrikeMagnitudeForThrust(in attackInformation, in collisionData, in weapon, thrustWeaponSpeed, extraLinearSpeed, isThrown);

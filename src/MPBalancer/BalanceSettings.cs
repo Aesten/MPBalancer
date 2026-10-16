@@ -288,12 +288,6 @@ public sealed class BalanceTable : ISetting
 // Changes made at runtime are lost on server restart.
 public static class BalanceSettings
 {
-    // Swings: scales the relative speed added to the swing's own speed (BalancedStrikeMagnitudeModel).
-    // Vanilla by default: the balancing targets pierce, cut damage was never the issue.
-    public static readonly BalanceSetting SwingSpeedBonus = new BalanceSetting("swing",
-        "scales the attacker/victim relative speed fed into swing magnitude (1 = vanilla)",
-        0f, 5f);
-
     // Melee pierce thrusts (BalancedStrikeMagnitudeModel): vanilla's strength for the hit (perks included) times a
     // percentage for the closing speed along the thrust, from these curves (lances: weapons with a couch usage);
     // vanilla's armor and body part handling then apply as usual. 100% at low speed, falling with speed: vanilla's
@@ -362,25 +356,13 @@ public static class BalanceSettings
         "1 = infantry perks' bonus against horses (Cavalry Breaker, Spearman, Farmer) only applies with polearms; 0 = any weapon (vanilla)",
         0f, 1f, vanilla: 0f);
 
-    public static readonly BalanceSetting PierceKnee = new BalanceSetting("pierce_knee",
-        "pierce damage to players above this is compressed smoothly toward pierce_cap",
-        0f, 1000f, vanilla: 1000f);
-
-    public static readonly BalanceSetting PierceCap = new BalanceSetting("pierce_cap",
-        "pierce damage to players never exceeds this",
-        0f, 1000f, vanilla: 1000f);
-
     // Couched lances and braced polearms (BalancedApplyDamageModel).
     public static readonly BalanceSetting Couch = new BalanceSetting("couch",
         "multiplies final damage from couched lances and braced polearms, before the couch curve",
         0f, 5f);
 
-    public static readonly BalanceSetting CouchKnee = new BalanceSetting("couch_knee",
-        "couch/brace damage above this is compressed smoothly toward couch_cap (0 = curve starts at 0)",
-        0f, 1000f, vanilla: 1000f);
-
     public static readonly BalanceSetting CouchCap = new BalanceSetting("couch_cap",
-        "couch/brace damage never exceeds this",
+        "couch/brace damage curve: cap x tanh(damage / cap), approaching the cap and never above it (1000 = off)",
         0f, 1000f, vanilla: 1000f);
 
     // Horse top speed (BalancedAgentStatModel); changes apply to every horse immediately.
@@ -422,10 +404,9 @@ public static class BalanceSettings
 
     public static readonly IReadOnlyList<ISetting> All = new ISetting[]
     {
-        SwingSpeedBonus,
         ThrustModel, ThrustCurveSpear, ThrustCurveLance, ThrustCurveFoot, ThrustHorse, WeaponMultipliers,
-        PierceMissile, MissileHead, MissileHeadHorse, MountDamagePolearm, PierceKnee, PierceCap,
-        Couch, CouchKnee, CouchCap,
+        PierceMissile, MissileHead, MissileHeadHorse, MountDamagePolearm,
+        Couch, CouchCap,
         HorseSpeed, HorseKnee, HorseCap, HorseManeuver, HorseAccelTime, HorseTurnKeepVelocity, CouchMinSpeed,
         BumpSpeed, ItemWeights, ThrustDamage, HorseHealth, SmallShields,
     };

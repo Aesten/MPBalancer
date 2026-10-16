@@ -24,19 +24,17 @@ public class BalancedApplyDamageModel : MultiplayerAgentApplyDamageModel
             {
                 // Couched lances and braced polearms: damage is almost entirely speed, so they get their
                 // own curve, applied to every victim (players and horses).
-                damage = Combat.SoftCap(damage * BalanceSettings.Couch.Value, BalanceSettings.CouchKnee.Value, BalanceSettings.CouchCap.Value);
+                // cap x tanh(damage / cap): smooth from 0, never above the cap (couch_cap 1000 = off).
+                damage *= BalanceSettings.Couch.Value;
+                if (BalanceSettings.CouchCap.Value < 1000f)
+                {
+                    damage = Combat.SoftCap(damage, 0f, BalanceSettings.CouchCap.Value);
+                }
             }
-            else if (damageType == DamageTypes.Pierce)
+            else if (damageType == DamageTypes.Pierce && collisionData.IsMissile)
             {
                 // Melee thrusts are shaped in the strike (BalancedStrikeMagnitudeModel); missiles here.
-                if (collisionData.IsMissile)
-                {
-                    damage *= BalanceSettings.PierceMissile.Value;
-                }
-                if (attackInformation.IsVictimAgentHuman)
-                {
-                    damage = Combat.SoftCap(damage, BalanceSettings.PierceKnee.Value, BalanceSettings.PierceCap.Value);
-                }
+                damage *= BalanceSettings.PierceMissile.Value;
             }
         }
 

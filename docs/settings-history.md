@@ -32,7 +32,9 @@ armor and body part apply after it (`docs/mod-damage.md`, "Melee thrusts"). Defa
   58.3 55.7 53.1 50.7 48.4 46.2 44.1 42.1`; new `thrust_horse = 1.15` (thrusts on horses were 5-18% below the
   baseline matches with the player curves). New `thrust_curve_foot`: thrusts by attackers on foot use the baseline's
   `thrust_curve` (0:72 2:67 4:63 6:60 8:57 10:54 12:52 16:49 20:46) per m/s, without its armor curve (weaker than
-  then); before, they used the mounted spear curve.
+  then); before, they used the mounted spear curve. `thrust_damage` now also scales couched and braced grips
+  (before the couch curve). Settings removed: `swing` (swings stay vanilla), `pierce_knee`/`pierce_cap` (were off),
+  `couch_knee` (the couch curve always starts at 0: `couch_cap` × tanh(damage / `couch_cap`)).
 - New `small_shields = 2`: the Khuzait light cavalry's Small Shield perk gives two shields.
 - Removed: `thrust_armor_curve`, `thrust_spread`, `thrust_ref`, `lance` (corrections for vanilla's speed² × weight
   term, which the curves now handle). `weapon_mult` default `none`.

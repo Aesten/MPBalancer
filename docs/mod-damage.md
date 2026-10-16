@@ -10,16 +10,15 @@ The mod hooks into two places in the damage pipeline, plus horse stats:
 engine collision
   │
   ├─ 1. relative speed
-  ├─ 2. magnitude ............................ swings: speed × swing (default 1 = vanilla)      (BalancedStrikeMagnitudeModel)
+  ├─ 2. magnitude ............................ swings: vanilla                                   (BalancedStrikeMagnitudeModel)
   │                                            melee pierce thrusts: vanilla strike × thrust_curve_lance or
   │                                            thrust_curve_spear (closing speed) × weapon_mult, at most vanilla
   ├─ 3–6. hit quality, damage factor, armor, body part (vanilla)
   └─ 7. perks (vanilla), then MPBalancer's final-damage stage:                             (BalancedApplyDamageModel)
          shield hit?                    → unchanged
-         couched lance / braced polearm → × couch, then soft cap toward couch_cap
+         couched lance / braced polearm → × couch, then couch_cap × tanh(damage / couch_cap)
          missile, pierce                → × pierce_missile
          anything else                  → unchanged
-         then, pierce on players        → soft cap: pierce_knee → pierce_cap (off by default)
        → damage dealt
 
 horse stats (any time they're computed): MountSpeed × horse_speed, then soft cap horse_knee → horse_cap
@@ -33,11 +32,11 @@ The checks are made in this order, on the damage after vanilla step 7:
 
 | Hit | What the mod does |
 |---|---|
-| Blocked by a shield | Nothing (shield damage stays vanilla; only a non-default `swing` would change swings blocked by shields) |
+| Blocked by a shield | Nothing (shield damage stays vanilla) |
 | Couched lance or braced polearm | Couch curve, on players and horses |
-| Arrow, bolt or thrown weapon (pierce) | × `pierce_missile`, then the pierce soft cap on players (off by default) |
-| Melee thrust that lands as pierce | % of vanilla by closing speed at the strike (`thrust_model` 1), then the pierce soft cap on players (off by default) |
-| Swing (cut or blunt) | Nothing by default (`swing` is 1) |
+| Arrow, bolt or thrown weapon (pierce) | × `pierce_missile` |
+| Melee thrust that lands as pierce | % of vanilla by closing speed at the strike (`thrust_model` 1) |
+| Swing (cut or blunt) | Nothing |
 | Arm/hilt hits, non-tip thrusts that land blunt, kicks, shield bashes, horse charges, falls | Nothing |
 
 "Pierce" is the effective damage type the game uses: arm and hilt hits, kicks and bashes, falls and horse charges count as blunt even with a pierce weapon.
@@ -49,7 +48,6 @@ strike = vanilla's strike × curve(closing speed) × weapon_mult[weapon id], at 
          curve: on foot thrust_curve_foot; mounted, thrust_curve_lance for lances (weapons that can couch),
                 thrust_curve_spear for everything else
 damage = strike → vanilla: armor, body part
-then, on players: soft cap (pierce_knee → pierce_cap; off by default)
 ```
 
 - **Vanilla's strike** is `0.0625 × (weight + 2.5) × (thrust speed + closing speed / 2)² × thrust damage factor`, with the thrust speed scaled by how far the thrust had come. With no closing speed that is exactly the weapon's **listed thrust damage** (`Crafting.CalculateThrustBaseDamage`). Perks that strengthen the speed bonus lengthen the closing speed term, and they stay in: Lancer (heavy cavalry, comes with the heavy lance) ×1.153 for Aserai, Khuzait and Sturgia and ×1.072 for Vlandia; Line Breaker (Battanian and Khuzait light cavalry, comes with their cavalry spear) and Ride Like the Wind ×1.225.
@@ -112,39 +110,33 @@ Each hit's `vanilla` is what vanilla would have dealt for the same hit (same wea
 
 | Undone | How |
 |---|---|
-| Thrust curves (`thrust_model`, `thrust_curve_*`, `weapon_mult`), `swing` | vanilla's strike over ours, recorded when the strike is computed (`VanillaEstimate`) |
+| Thrust curves (`thrust_model`, `thrust_curve_*`, `thrust_horse`, `weapon_mult`) | vanilla's strike over ours, recorded when the strike is computed (`VanillaEstimate`) |
 | `thrust_damage` | the weapon's vanilla thrust damage factor over the current one |
 | `missile_head`, `missile_head_horse` | vanilla's body part multiplier over ours |
 | `mount_damage_polearm` | it acts after the column is taken (the column keeps the perk's bonus) |
-| `pierce_missile`, couch curve, soft caps | they act after the column is taken |
+| `pierce_missile`, couch curve | they act after the column is taken |
 
 Not undone, because they change the hit itself rather than its damage: horse speed and handling (a slower horse hits at a lower speed), item weights, horse health.
 
 ## Soft caps
 
-The pierce cap on players is off by default (knee and cap 1000): every class has 100 health, so it hardly changed kills, while it compressed big hits in the stats. It still works if set (e.g. to stop one-hit team kills with team damage at 50%).
-
-`pierce_knee` / `pierce_cap`, `couch_knee` / `couch_cap` and `horse_knee` / `horse_cap` all use the same formula:
+The couch curve (`couch_cap`, knee 0) and the horse speed cap (`horse_knee` / `horse_cap`) use the same formula:
 
 ```
 value ≤ knee:  unchanged
 value > knee:  knee + (cap − knee) × tanh((value − knee) / (cap − knee))
 ```
 
-It's smooth at the knee, gets flatter as the value rises, and never exceeds the cap. Setting both to 1000 turns it off.
+It's smooth at the knee, gets flatter as the value rises, and never exceeds the cap. A cap of 1000 turns it off.
 
-| Input | 90 | 100 | 120 | 150 | 200+ |
-|---|---|---|---|---|---|
-| Pierce cap (knee 90, cap 130, the setting until 15 October) | 90 | 100 | 115 | 126 | 130 |
-
-With knee 0 (the couch default) it compresses from the start: `200 × tanh(damage / 200)`.
+The couch curve has knee 0, so it compresses from the start: `200 × tanh(damage / 200)`. The pierce cap on players (`pierce_knee`/`pierce_cap`, 90 → 130 until 15 October) was removed: every class has 100 health, so it hardly changed kills.
 
 ## Other attacks
 
-- **Swings:** vanilla by default. The balancing targets pierce; cut damage was never the issue. `swing` scales the movement speed added to a swing at step 2 (standing swings are never affected); it was 0.75 in earlier versions, a leftover from the first general speed-bonus nerf, and trimmed mounted swings by about 5–10%. It's the only change inside the physics, so it would also affect swings blocked by shields.
-- **Missiles:** `× pierce_missile` (1, vanilla; 0.85 until 15 October) on the final damage, then the pierce soft cap on players (off by default). Missile speed physics is vanilla. Headshots (head and neck) are set where the game picks the body part multiplier (`GetDamageMultiplierForBodyPart`, before armor): `missile_head` 1.5 on players (vanilla 2), `missile_head_horse` 1.2 on horses (vanilla, the same as for any pierce hit to a horse's head). The hit log's `vanilla` column uses vanilla's multiplier.
+- **Swings:** vanilla. The balancing targets pierce; cut damage was never the issue.
+- **Missiles:** `× pierce_missile` (1, vanilla; 0.85 until 15 October) on the final damage. Missile speed physics is vanilla. Headshots (head and neck) are set where the game picks the body part multiplier (`GetDamageMultiplierForBodyPart`, before armor): `missile_head` 1.5 on players (vanilla 2), `missile_head_horse` 1.2 on horses (vanilla, the same as for any pierce hit to a horse's head). The hit log's `vanilla` column uses vanilla's multiplier.
 - **Anti-horse infantry perks:** Cavalry Breaker (heavy infantry, Empire shock infantry: +100% / +75% against horses), Spearman and Farmer (light infantry: +50–75%) are `MountDamage` perk effects without a weapon filter: vanilla applies them to any melee weapon (Cavalry Breaker) or any attack, thrown and ranged included (Spearman, Farmer). With `mount_damage_polearm` 1, an infantry class's bonus only counts with a polearm in hand (one- or two-handed, by grip), the spear or pike those perks come with; otherwise the game's damage multiplier (1 + damage bonuses + damage taken) is recomputed without it. Ranged classes' perks are untouched.
-- **Couched lances and braced polearms:** `× couch` (1.0), then the soft cap with knee 0 and cap 200, on players and horses. Couch damage is almost entirely speed:
+- **Couched lances and braced polearms:** a weapon's `thrust_damage` applies to its couched and braced grips too; then `× couch` (1.0), then `200 × tanh(damage / 200)` (`couch_cap`), on players and horses. Couch damage is almost entirely speed:
 
 | Speed (m/s) | 4 | 6 | 8 | 9 | 10 | 11 | 13 | 16 | 20 |
 |---|---|---|---|---|---|---|---|---|---|
@@ -189,7 +181,6 @@ Bump damage and knockdowns stay vanilla: damage = (closing speed × angle)² × 
 
 | Setting | Default | Applies to | Where |
 |---|---|---|---|
-| `swing` | 1 (vanilla) | swings (all victims, shields too) | step 2 |
 | `thrust_model` | 1 (0 = vanilla) | melee pierce thrusts | step 2 |
 | `thrust_curve_spear` | see above | melee pierce thrusts with weapons that can't couch | step 2 |
 | `thrust_curve_lance` | see above | melee pierce thrusts with lances | step 2 |
@@ -199,8 +190,7 @@ Bump damage and knockdowns stay vanilla: damage = (closing speed × angle)² × 
 | `pierce_missile` | 1 | arrows, bolts, thrown weapons | final damage |
 | `missile_head`, `missile_head_horse` | 1.5, 1.2 | pierce missiles to the head and neck, players / horses | body part multiplier |
 | `mount_damage_polearm` | 1 | infantry perks' bonus against horses | perk multiplier (final damage) |
-| `pierce_knee`, `pierce_cap` | 1000, 1000 (off) | all pierce damage on players, last | final damage |
-| `couch`, `couch_knee`, `couch_cap` | 1, 0, 200 | couched lances, braced polearms (all victims) | final damage |
+| `couch`, `couch_cap` | 1, 200 | couched lances, braced polearms (all victims) | final damage |
 | `horse_speed`, `horse_knee`, `horse_cap` | 0.92, 12.4, 14.2 | horse top speed | horse stats |
 | `horse_maneuver`, `horse_accel_time` | 1, 1 (vanilla) | horse turning and acceleration | horse stats |
 | `horse_turn_keep_speed`, `couch_min_speed` | 0.6, 9 (vanilla) | horse speed loss on turns, couch minimum speed | engine parameters |

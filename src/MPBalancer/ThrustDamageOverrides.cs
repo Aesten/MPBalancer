@@ -10,7 +10,8 @@ namespace MPBalancer;
 // .ConvertBaseAttackMagnitude), and the listed damage is the standing strike times that factor, so scaling the factor
 // scales the damage at every speed, as if the weapon were made that way. The value is the item's first thrusting
 // usage's damage (the one-handed one for cavalry spears); its other thrusting usages get the same ratio (two-handed 34 -> 35).
-// Couched and braced usages keep vanilla's damage: only active thrusts change.
+// Couched and braced usages (passive attacks, which also take their damage from the usage's thrust factor) get it
+// too, before the couch curve.
 //
 // Applies to the next hit. Clients still list the vanilla number in the loadout. Items taken out of the table get
 // their original values back.
@@ -92,12 +93,11 @@ internal static class ThrustDamageOverrides
         }
     }
 
-    // Original over current thrust factor for an active melee thrust with a changed weapon, else 1: what the hit would
-    // have dealt with the vanilla weapon, for the hit log's vanilla column (the factor scales the damage proportionally).
+    // Original over current thrust factor for a melee thrust, couch or brace with a changed weapon, else 1: what the
+    // hit would have dealt with the vanilla weapon, for the hit log's vanilla column (the factor scales the damage proportionally).
     public static float VanillaRatio(in TaleWorlds.MountAndBlade.AttackInformation attackInformation, in TaleWorlds.MountAndBlade.AttackCollisionData collisionData)
     {
-        if (Original.Count == 0 || collisionData.IsMissile || attackInformation.IsAttackerAgentDoingPassiveAttack
-            || collisionData.StrikeType != (int)StrikeType.Thrust)
+        if (Original.Count == 0 || collisionData.IsMissile || collisionData.StrikeType != (int)StrikeType.Thrust)
         {
             return 1f;
         }
@@ -111,10 +111,7 @@ internal static class ThrustDamageOverrides
     // The usage's vanilla thrust damage (pierce thrusts only), before any change here.
     private static int OriginalDamage(WeaponComponentData usage)
     {
-        // Couched and braced usages (passive attacks) also take their damage from the usage's thrust factor; they keep
-        // vanilla's, so this only changes active thrusts.
-        if (usage == null || usage.ThrustDamageType != DamageTypes.Pierce
-            || (usage.ItemUsage != null && (usage.ItemUsage.Contains("couch") || usage.ItemUsage.Contains("bracing"))))
+        if (usage == null || usage.ThrustDamageType != DamageTypes.Pierce)
         {
             return 0;
         }

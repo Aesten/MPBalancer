@@ -5,13 +5,13 @@ A **server-side multiplayer balancing mod** for Mount & Blade II: Bannerlord. It
 What it changes (all tunable in-game, see [Tuning in-game](#tuning-in-game)):
 
 - **Melee pierce thrusts** do a percentage of vanilla's damage for the same hit, by the closing speed along the thrust: close to the standing hit up to 4 m/s, then speed adds steadily up to about 13 m/s and less and less after (one curve for lances, one for spears and other weapons; the same for now). Vanilla's speed term grows with the square of the speed times the weapon's weight, so fast hits ran away; now they gain less, while vanilla's order between weapons (weight, thrust speed, speed bonus perks) stays. Never more than vanilla. Armor and body part apply as in vanilla (in multiplayer, armor is one value per class, the same on every body part).
-- **Missiles**: vanilla damage, but headshots (head and neck) on players do ×1.5 instead of ×2. **Swings** are vanilla (the target is pierce; cut damage was never the issue), with a `swing` setting kept for tests.
+- **Missiles**: vanilla damage, but headshots (head and neck) on players do ×1.5 instead of ×2. **Swings** are vanilla (the target is pierce; cut damage was never the issue).
 - **Anti-horse infantry perks** (Cavalry Breaker, Spearman, Farmer): their bonus damage against horses only counts with a polearm (the spear or pike they come with); vanilla applies it to any weapon, even thrown ones.
 - **Couched lances / braced polearms**: a curve that approaches 200 and never exceeds it.
 - **Horses**: top speeds compressed to about 12–14 m/s (vanilla about 13–16.6).
 - **Item weights**: the Khuzait Rabble's Curved Round Shield weighs 1 kg instead of 5 (it made the class the slowest infantry; item weights set movement speed in multiplayer).
 - **Horse health**: the Khuzait Steppe Horse and Tarpan have 215 health instead of 185, the Steppe Charger 245.
-- **Thrust damage** (active thrusts only; couches and braces stay vanilla): Battanian Long Spear 29+1; lances raised so each beats the plain spears: Khuzait Long Lance 29+7, Vlandian Heavy Lance 33+1, Sturgian Long Lance 31+6, Western Lance and Khuzait Lance 31+7, Bamboo Lance 30+5, Sturgian Lance 29+4, Vlandian Long Lance 29+5.
+- **Thrust damage** (every grip, couches and braces included): Battanian Long Spear 29+1; lances raised so each beats the plain spears: Khuzait Long Lance 29+7, Vlandian Heavy Lance 33+1, Sturgian Long Lance 31+6, Western Lance and Khuzait Lance 31+7, Bamboo Lance 30+5, Sturgian Lance 29+4, Vlandian Long Lance 29+5.
 - **Small Shield perk** (Khuzait light cavalry): gives two Steppe Guardian Shields instead of one, the second in the slot the class leaves free with this perk.
 
 [docs/mod-damage.md](docs/mod-damage.md) explains how the mod processes a hit: which path each kind of hit takes, where each setting applies, how the curves work, and what damage to expect. [docs/native-damage.md](docs/native-damage.md) describes the vanilla calculation it builds on. `scripts/curve-editor.py` is a small window for editing the speed curves (`thrust_curve_spear`, `thrust_curve_lance`) point by point, 0–25 m/s: it saves them to `defaults.txt` or sends them to the running server. [docs/settings-history.md](docs/settings-history.md) records each set of defaults that was played, with the sessions and data behind it.
@@ -62,7 +62,6 @@ Default values live in [src/MPBalancer/defaults.txt](src/MPBalancer/defaults.txt
 
 | Setting | Default | Vanilla | What it does |
 |---|---|---|---|
-| `swing` | 1 | 1 | scales the relative speed added to swings (vanilla by default) |
 | `thrust_model` | 1 | 0 | 1 = melee pierce thrusts do a % of vanilla by closing speed (the curves below); 0 = vanilla |
 | `thrust_curve_spear` | 26 values, % of vanilla per m/s of closing speed: 100, 80, 76 at 0, 2, 4 m/s (close to the standing hit), 78-79% from 6 to 10, 72% at 13, 53% at 20, 42% at 25 | – | melee pierce thrusts with weapons that can't couch; also accepts speed:percent pairs |
 | `thrust_curve_lance` | the same as `thrust_curve_spear` for now | – | melee pierce thrusts with lances (weapons that can couch) |
@@ -73,9 +72,8 @@ Default values live in [src/MPBalancer/defaults.txt](src/MPBalancer/defaults.txt
 | `missile_head` | 1.5 | 2 | pierce missile damage multiplier on players' head and neck; applies to missiles fired after the change |
 | `missile_head_horse` | 1.2 | 1.2 | the same on horses (vanilla 1.2, as for any pierce hit to a horse's head) |
 | `mount_damage_polearm` | 1 | 0 | 1 = infantry perks' bonus against horses (Cavalry Breaker +100%, Spearman and Farmer +50-75%) only with polearms; 0 = any weapon. Ranged classes' perks (Hunter, Big Game Hunter, Poacher) are untouched |
-| `pierce_knee` / `pierce_cap` | off (1000) | off (1000) | pierce damage to players: unchanged up to the knee, then smoothly toward the cap. Off since every class has 100 health; with team damage at 50% it would stop one-hit team kills |
 | `couch` | 1 | 1 | multiplies couch/brace damage, before the couch curve |
-| `couch_knee` / `couch_cap` | 0 / 200 | off | couch/brace curve; with knee 0 it's `200 × tanh(damage / 200)` |
+| `couch_cap` | 200 | off (1000) | couch/brace curve: `couch_cap × tanh(damage / couch_cap)`, approaching the cap and never above it |
 | `horse_speed` | 0.92 | 1 | multiplies horse top speed (applies to every horse immediately) |
 | `horse_knee` / `horse_cap` | 12.4 / 14.2 | off (1000) | horse top speeds (m/s) above the knee are compressed smoothly toward the cap; keep well above 9 (the couch minimum) |
 | `horse_maneuver` | 1 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
@@ -84,7 +82,7 @@ Default values live in [src/MPBalancer/defaults.txt](src/MPBalancer/defaults.txt
 | `couch_min_speed` | 9 | 9 | native: minimum horse speed (m/s) to couch |
 | `bump_speed` | 4.8 | 4.3 | minimum relative speed (m/s) for a horse bump; the engine also needs a running gait (lowest seen 5.9 m/s), so this can only raise the bar. Applies to horses spawned after the change |
 | `item_weight` | `mp_curved_round_shield:1` | none | item weight in kg per item id. In multiplayer, weapons and shields carried (more so held) slow their carrier; armor weight doesn't count. The Khuzait Rabble's Curved Round Shield (5 kg) made it the slowest infantry class. Applies to characters spawned after the change; clients predict their own movement with the vanilla weight |
-| `thrust_damage` | Battanian Long Spear 30 and the lances above (see `defaults.txt`) | none | listed thrust damage per weapon item id (its first thrusting usage; the others scale by the same ratio; couched and braced usages stay vanilla). Scales the weapon's thrust damage factor, so damage at every speed; applies to the next hit. Clients still list the vanilla number |
+| `thrust_damage` | Battanian Long Spear 30 and the lances above (see `defaults.txt`) | none | listed thrust damage per weapon item id (its first thrusting usage; the others scale by the same ratio, couched and braced usages included). Scales the weapon's thrust damage factor, so damage at every speed; applies to the next hit. Clients still list the vanilla number |
 | `horse_hp` | `mp_khuzait_horse_agile:215 mp_khuzait_horse:215 mp_khuzait_horse_charger:245` | none | total health per horse item id (vanilla: 200 plus the horse's extra health; these three Khuzait horses have 185). Applies to horses spawned after the change; a player's own horse health bar can show more than full until the horse is below its vanilla maximum |
 | `small_shields` | 2 | 1 | shields given by the Khuzait light cavalry's Small Shield perk; 2 adds a second one in Item3. Applies from the next spawn, in every mode, to players and their troops. Spawned characters and the pre-spawn preview show both; the class selection screen (built from each player's own files) still shows one |
 
@@ -111,7 +109,7 @@ Settings numbers start over at each server run, so use `--settings` on one run's
 
 - `src/MPBalancer/` — the mod (targets `netstandard2.0`, like the game assemblies; the server hosts them on .NET 6).
   - `MPBalancerSubModule.cs` — registers the replacement models for multiplayer games.
-  - `Models/` — `BalancedApplyDamageModel` (thrust/missile/couch curves on the final damage), `BalancedStrikeMagnitudeModel` (swing speed bonus), `BalancedAgentStatModel` (horse top speed).
+  - `Models/` — `BalancedStrikeMagnitudeModel` (the thrust curves, on the strike), `BalancedApplyDamageModel` (missiles, couches, anti-horse perks and missile headshots, on the final damage), `BalancedAgentStatModel` (horse speed and handling).
   - `BalanceSettings.cs` — all settings with defaults, vanilla values and ranges; number, curve and table setting types.
   - `ThrustDamageOverrides.cs`, `ItemWeightOverrides.cs`, `HorseHealthOverrides.cs`, `SmallShieldPerk.cs`, `MountDamagePerks.cs` — the item and perk changes. `Combat.cs` — shared helpers (speeds, soft cap, damage type).
   - `ChatCommands.cs`, `HitDebug.cs`, `Speedometer.cs` — admin commands, hit log/readout, speedometer (mounted and on foot). `ServerTickBehavior.cs` sends their chat output on the mission tick. `VanillaEstimate.cs` — the vanilla damage shown in the hit log.

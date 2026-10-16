@@ -5,15 +5,13 @@
 # scripts/curve-editor.py edits the speed curves here. Each set of defaults played is recorded in
 # docs/settings-history.md.
 
-swing = 1
-
 # Melee pierce thrusts: thrust_model = 1 makes them do a percentage of vanilla's strength for the same hit (perks
 # included) by the closing speed along the thrust; armor and body part then apply as in vanilla. 0 = vanilla.
 thrust_model = 1
 
 # Speed curves, mounted attackers: % of vanilla, one value per m/s of closing speed from 0 to 25 (beyond 25: the last
-# value). Weapons that can't couch, then lances (both the same for now). Shaped on the damage, not on vanilla: close to the standing
-# hit up to about 2 m/s (vanilla already gains a lot at low speed), +30% by 4 m/s, a steady rise to about 13 m/s, then
+# value). Weapons that can't couch, then lances (both the same for now). Shaped on the damage, not on vanilla: close
+# to the standing hit up to about 2 m/s (vanilla already gains a lot at low speed), +30% by 4 m/s, a steady rise to about 13 m/s, then
 # flattening (the % dips at low speed and rises again because vanilla jumps at low speed). Fitted on the Aserai Heavy
 # Lance: head hit on armor 55 at 13.1 m/s does 77 (vanilla 107). Damage never goes below the standing hit and still
 # rises with speed. Never above 100% (capped per hit).
@@ -42,13 +40,8 @@ missile_head_horse = 1.2
 # weapons those perks come with; vanilla applies it to any weapon.
 mount_damage_polearm = 1
 
-# Pierce soft cap on players: off (vanilla). Every class has 100 health, so it hardly changed kills; it only
-# compressed big hits in the stats and capped team hits (90 -> 130 until 15 October).
-pierce_knee = 1000
-pierce_cap = 1000
-
+# Couched lances and braced polearms: x couch, then couch_cap x tanh(damage / couch_cap) (approaches 200).
 couch = 1
-couch_knee = 0
 couch_cap = 200
 
 horse_speed = 0.92
@@ -60,7 +53,7 @@ horse_turn_keep_speed = 0.6
 couch_min_speed = 9
 bump_speed = 4.8
 
-# Listed thrust damage per weapon (first thrusting usage; the others scale alike; couches and braces stay vanilla).
+# Listed thrust damage per weapon (first thrusting usage; the others scale alike, couches and braces included).
 # Vanilla: Battanian Long Spear 29, Khuzait Long Lance 29, Vlandian Heavy Lance 33, Sturgian Long Lance, Western Lance
 # and Khuzait Lance 31, Bamboo Lance 30, Sturgian Lance and Vlandian Long Lance 29. Lances raised so every lance beats
 # plain spears: at 12 m/s (head, armor 55) Khuzait Long Lance ~ the heavy lances, the 31s ~ the Vlandian Heavy Lance's
