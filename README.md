@@ -76,7 +76,7 @@ Default values live in [src/MPBalancer/defaults.txt](src/MPBalancer/defaults.txt
 | `couch_cap` | 200 | off (1000) | couch/brace curve: `couch_cap × tanh(damage / couch_cap)`, approaching the cap and never above it |
 | `horse_speed` | 0.92 | 1 | multiplies horse top speed (applies to every horse immediately) |
 | `horse_knee` / `horse_cap` | 12.4 / 14.2 | off (1000) | horse top speeds (m/s) above the knee are compressed smoothly toward the cap; keep well above 9 (the couch minimum) |
-| `horse_maneuver` | 1 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
+| `horse_maneuver` | 0.95 | 1 | multiplies horse maneuver (turning); applies to every horse immediately |
 | `horse_accel_time` | 1 | 1 | multiplies the horse's `TopSpeedReachDuration` stat; by its name higher = slower acceleration, check the `[MPB-ACCEL]` log lines |
 | `horse_turn_keep_speed` | 0.6 | 0.6 | native: how sharp a horse can turn before losing its speed |
 | `couch_min_speed` | 9 | 9 | native: minimum horse speed (m/s) to couch |
@@ -104,6 +104,23 @@ ssh bannerlord@7900x 'zcat ~/bannerlord/instances/0/metrics/hits-*.csv.gz' | pyt
 ```
 
 Settings numbers start over at each server run, so use `--settings` on one run's file.
+
+## Changelog page
+
+`site/` is a static page for players, published with GitHub Pages (`.github/workflows/pages.yml`, on every push to
+`master` that changes `site/`): the changelog (`site/changelog.md`) and an interactive thrust damage explorer that
+compares weapons by closing speed, armor, body part and target, for the class/perk/horse setups players can spawn
+with. `#explorer` in the URL opens the explorer.
+
+```sh
+python scripts/site-data.py              # after changing defaults.txt or site/changelog.md; then commit site/
+python -m http.server -d site 8000       # preview at http://localhost:8000
+```
+
+`scripts/site-data.py` writes `site/data.json` (weapons, setups, horses, curves) and `site/changelog.html` from
+`defaults.txt`, the changelog, the game's data (`../_BannerlordDecompiled`) and the local weapon table
+(`reports/data/weapons-v1.4.8.csv`). The page computes the damage in the browser with the same formulas as the mod.
+Repository settings: Pages > Source: GitHub Actions (the repository has to be public on a free plan).
 
 ## Layout
 

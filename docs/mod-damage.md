@@ -165,11 +165,11 @@ Keep top speeds well above 9 m/s, the minimum to hold a couched lance (a native 
 ## Horse handling and bumps
 
 ```
-maneuver   = vanilla MountManeuver × horse_maneuver (1, vanilla)
+maneuver   = vanilla MountManeuver × horse_maneuver (0.95)
 accel time = vanilla TopSpeedReachDuration × horse_accel_time (1)
 ```
 
-Both apply to every horse immediately. `horse_turn_keep_speed` (how sharp a horse can turn before losing speed) and `couch_min_speed` (9 m/s) are engine parameters, overridden on the server only; clients keep their own values. All of these are vanilla by default.
+Both apply to every horse immediately. `horse_turn_keep_speed` (how sharp a horse can turn before losing speed) and `couch_min_speed` (9 m/s) are engine parameters, overridden on the server only; clients keep their own values. All of these except `horse_maneuver` are vanilla by default.
 
 **Bumps.** A bump happens when a horse runs into someone faster than `bump_speed` (4.8 m/s; vanilla 4.3, the horse Monster's `relative_speed_limit_for_charge`; camels keep their 5.0/4.3 ratio). The engine reads it when a horse spawns, so changes apply from the next spawn. The speed is the closing speed: the horse's velocity minus the victim's velocity along the horse's direction.
 
@@ -192,7 +192,7 @@ Bump damage and knockdowns stay vanilla: damage = (closing speed × angle)² × 
 | `mount_damage_polearm` | 1 | infantry perks' bonus against horses | perk multiplier (final damage) |
 | `couch`, `couch_cap` | 1, 200 | couched lances, braced polearms (all victims) | final damage |
 | `horse_speed`, `horse_knee`, `horse_cap` | 0.92, 12.4, 14.2 | horse top speed | horse stats |
-| `horse_maneuver`, `horse_accel_time` | 1, 1 (vanilla) | horse turning and acceleration | horse stats |
+| `horse_maneuver`, `horse_accel_time` | 0.95, 1 | horse turning and acceleration | horse stats |
 | `horse_turn_keep_speed`, `couch_min_speed` | 0.6, 9 (vanilla) | horse speed loss on turns, couch minimum speed | engine parameters |
 | `bump_speed` | 4.8 | minimum speed for a bump | horse Monster, at spawn |
 
