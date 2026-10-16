@@ -108,16 +108,17 @@ Settings numbers start over at each server run, so use `--settings` on one run's
 ## Changelog page
 
 `site/` is a static page for players, published with GitHub Pages (`.github/workflows/pages.yml`, on every push to
-`master` that changes `site/`): the changelog (`site/changelog.md`) and an interactive thrust damage explorer that
-compares weapons by closing speed, armor, body part and target, for the class/perk/horse setups players can spawn
-with. `#explorer` in the URL opens the explorer.
+`master` that changes `site/`): the changelog (`site/changelog.md`) and up to four lance/spear damage graphs. Each
+graph is a class with its perks picked as on the class selection screen (giving the weapon, horse and speed perk) and
+shows the damage by closing speed at every armor level, mod and vanilla; drag to zoom, head/body/legs for all graphs.
+`#explorer` in the URL opens the graphs.
 
 ```sh
 python scripts/site-data.py              # after changing defaults.txt or site/changelog.md; then commit site/
 python -m http.server -d site 8000       # preview at http://localhost:8000
 ```
 
-`scripts/site-data.py` writes `site/data.json` (weapons, setups, horses, curves) and `site/changelog.html` from
+`scripts/site-data.py` writes `site/data.json` (cavalry classes with their perk lists, weapons, horses, curves) and `site/changelog.html` from
 `defaults.txt`, the changelog, the game's data (`../_BannerlordDecompiled`) and the local weapon table
 (`reports/data/weapons-v1.4.8.csv`). The page computes the damage in the browser with the same formulas as the mod.
 Repository settings: Pages > Source: GitHub Actions (the repository has to be public on a free plan).

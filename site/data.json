@@ -85,72 +85,23 @@
    46.0
   ]
  },
- "thrust_horse": 1.15,
  "weapon_mult": {},
  "weapons": {
-  "mp_aserai_heavy_lance": {
-   "name": "Aserai Heavy Lance",
-   "lance": true,
-   "grip": "OneHandedPolearm",
-   "listed": 34,
-   "thrust_speed": 71,
-   "buffed": 34
-  },
-  "mp_aserai_long_lance": {
-   "name": "Bamboo Lance",
-   "lance": true,
-   "grip": "OneHandedPolearm",
-   "listed": 30,
-   "thrust_speed": 76,
-   "buffed": 35.0
-  },
-  "mp_khuzait_lance_heavy": {
-   "name": "Khuzait Lance",
-   "lance": true,
-   "grip": "OneHandedPolearm",
-   "listed": 31,
-   "thrust_speed": 77,
-   "buffed": 38.0
-  },
-  "mp_khuzait_lance_long": {
-   "name": "Khuzait Long Lance",
-   "lance": true,
-   "grip": "OneHandedPolearm",
-   "listed": 29,
-   "thrust_speed": 75,
-   "buffed": 36.0
-  },
-  "mp_sturgia_heavy_lance": {
-   "name": "Sturgian Heavy Lance",
-   "lance": true,
-   "grip": "OneHandedPolearm",
-   "listed": 34,
-   "thrust_speed": 72,
-   "buffed": 34
-  },
-  "mp_sturgia_lance": {
-   "name": "Sturgian Lance",
-   "lance": true,
-   "grip": "OneHandedPolearm",
-   "listed": 29,
-   "thrust_speed": 74,
-   "buffed": 33.0
-  },
-  "mp_sturgia_long_lance": {
-   "name": "Sturgian Long Lance",
-   "lance": true,
-   "grip": "OneHandedPolearm",
-   "listed": 31,
-   "thrust_speed": 74,
-   "buffed": 37.0
-  },
-  "mp_vlandian_heavy_lance": {
-   "name": "Vlandian Heavy Lance",
-   "lance": true,
+  "mp_western_cavalry_spear": {
+   "name": "Western Cavalry Spear",
+   "lance": false,
    "grip": "OneHandedPolearm",
    "listed": 33,
-   "thrust_speed": 71,
-   "buffed": 34.0
+   "thrust_speed": 88,
+   "buffed": 33
+  },
+  "mp_western_long_spear": {
+   "name": "Western Long Spear",
+   "lance": false,
+   "grip": "OneHandedPolearm",
+   "listed": 29,
+   "thrust_speed": 86,
+   "buffed": 29
   },
   "mp_western_long_lance": {
    "name": "Vlandian Long Lance",
@@ -158,6 +109,14 @@
    "grip": "OneHandedPolearm",
    "listed": 29,
    "thrust_speed": 76,
+   "buffed": 34.0
+  },
+  "mp_vlandian_heavy_lance": {
+   "name": "Vlandian Heavy Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 33,
+   "thrust_speed": 71,
    "buffed": 34.0
   },
   "mp_western_lance": {
@@ -168,13 +127,53 @@
    "thrust_speed": 76,
    "buffed": 38.0
   },
-  "mp_aserai_long_spear": {
-   "name": "Aserai Long Spear",
+  "mp_empire_heavy_lance": {
+   "name": "Heavy Kontos",
+   "lance": false,
+   "grip": "TwoHandedPolearm",
+   "listed": 46,
+   "thrust_speed": 84,
+   "buffed": 46
+  },
+  "mp_khuzait_long_spear": {
+   "name": "Khuzait Long Spear",
+   "lance": false,
+   "grip": "OneHandedPolearm",
+   "listed": 31,
+   "thrust_speed": 85,
+   "buffed": 31
+  },
+  "mp_khuzait_cavalry_spear": {
+   "name": "Khuzait Cavalry Spear",
    "lance": false,
    "grip": "OneHandedPolearm",
    "listed": 32,
    "thrust_speed": 85,
    "buffed": 32
+  },
+  "mp_khuzait_lance_long": {
+   "name": "Khuzait Long Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 29,
+   "thrust_speed": 75,
+   "buffed": 36.0
+  },
+  "mp_khuzait_heavy_glaive": {
+   "name": "Heavy Glaive",
+   "lance": false,
+   "grip": "OneHandedPolearm",
+   "listed": 27,
+   "thrust_speed": 88,
+   "buffed": 27
+  },
+  "mp_khuzait_lance_heavy": {
+   "name": "Khuzait Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 31,
+   "thrust_speed": 77,
+   "buffed": 38.0
   },
   "mp_aserai_bamboo_spear": {
    "name": "Bamboo Spear",
@@ -183,6 +182,70 @@
    "listed": 32,
    "thrust_speed": 87,
    "buffed": 32
+  },
+  "mp_aserai_long_spear": {
+   "name": "Aserai Long Spear",
+   "lance": false,
+   "grip": "OneHandedPolearm",
+   "listed": 32,
+   "thrust_speed": 85,
+   "buffed": 32
+  },
+  "mp_aserai_long_lance": {
+   "name": "Bamboo Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 30,
+   "thrust_speed": 76,
+   "buffed": 35.0
+  },
+  "mp_aserai_heavy_lance": {
+   "name": "Aserai Heavy Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 34,
+   "thrust_speed": 71,
+   "buffed": 34
+  },
+  "mp_sturgia_great_spear": {
+   "name": "Great Spear",
+   "lance": false,
+   "grip": "TwoHandedPolearm",
+   "listed": 35,
+   "thrust_speed": 95,
+   "buffed": 35
+  },
+  "mp_sturgia_long_spear": {
+   "name": "Sturgian Long Spear",
+   "lance": false,
+   "grip": "OneHandedPolearm",
+   "listed": 30,
+   "thrust_speed": 87,
+   "buffed": 30
+  },
+  "mp_sturgia_long_lance": {
+   "name": "Sturgian Long Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 31,
+   "thrust_speed": 74,
+   "buffed": 37.0
+  },
+  "mp_sturgia_lance": {
+   "name": "Sturgian Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 29,
+   "thrust_speed": 74,
+   "buffed": 33.0
+  },
+  "mp_sturgia_heavy_lance": {
+   "name": "Sturgian Heavy Lance",
+   "lance": true,
+   "grip": "OneHandedPolearm",
+   "listed": 34,
+   "thrust_speed": 72,
+   "buffed": 34
   },
   "mp_battania_cavalry_spear": {
    "name": "Battanian Cavalry Spear",
@@ -199,100 +262,32 @@
    "listed": 29,
    "thrust_speed": 89,
    "buffed": 30.0
-  },
-  "mp_sturgia_great_spear": {
-   "name": "Great Spear",
-   "lance": false,
-   "grip": "TwoHandedPolearm",
-   "listed": 35,
-   "thrust_speed": 95,
-   "buffed": 35
-  },
-  "mp_khuzait_heavy_glaive": {
-   "name": "Heavy Glaive",
-   "lance": false,
-   "grip": "OneHandedPolearm",
-   "listed": 27,
-   "thrust_speed": 88,
-   "buffed": 27
-  },
-  "mp_empire_heavy_lance": {
-   "name": "Heavy Kontos",
-   "lance": false,
-   "grip": "TwoHandedPolearm",
-   "listed": 46,
-   "thrust_speed": 84,
-   "buffed": 46
-  },
-  "mp_khuzait_cavalry_spear": {
-   "name": "Khuzait Cavalry Spear",
-   "lance": false,
-   "grip": "OneHandedPolearm",
-   "listed": 32,
-   "thrust_speed": 85,
-   "buffed": 32
-  },
-  "mp_khuzait_long_spear": {
-   "name": "Khuzait Long Spear",
-   "lance": false,
-   "grip": "OneHandedPolearm",
-   "listed": 31,
-   "thrust_speed": 85,
-   "buffed": 31
-  },
-  "mp_sturgia_long_spear": {
-   "name": "Sturgian Long Spear",
-   "lance": false,
-   "grip": "OneHandedPolearm",
-   "listed": 30,
-   "thrust_speed": 87,
-   "buffed": 30
-  },
-  "mp_western_cavalry_spear": {
-   "name": "Western Cavalry Spear",
-   "lance": false,
-   "grip": "OneHandedPolearm",
-   "listed": 33,
-   "thrust_speed": 88,
-   "buffed": 33
-  },
-  "mp_western_long_spear": {
-   "name": "Western Long Spear",
-   "lance": false,
-   "grip": "OneHandedPolearm",
-   "listed": 29,
-   "thrust_speed": 86,
-   "buffed": 29
   }
  },
  "horses": {
-  "mp_vlandia_horse_faster": {
-   "name": "Hunter",
-   "top_speed": 13.72
-  },
   "mp_vlandia_horse_agile": {
    "name": "Jaculan Horse",
    "top_speed": 13.13
+  },
+  "mp_vlandia_horse_faster": {
+   "name": "Hunter",
+   "top_speed": 13.72
   },
   "mp_vlandia_horse": {
    "name": "Saddle Horse",
    "top_speed": 12.58
   },
-  "mp_vlandia_horse_war_tougher": {
-   "name": "Brawler",
+  "mp_vlandia_horse_war": {
+   "name": "Charger",
    "top_speed": 11.68
   },
   "mp_vlandia_horse_war_faster": {
    "name": "Faster Charger",
    "top_speed": 12.87
   },
-  "mp_vlandia_horse_war": {
-   "name": "Charger",
+  "mp_vlandia_horse_war_tougher": {
+   "name": "Brawler",
    "top_speed": 11.68
-  },
-  "mp_empire_horse_agile": {
-   "name": "Midlands Palfrey",
-   "top_speed": 13.56
   },
   "mp_empire_horse_faster": {
    "name": "Danustica Horse",
@@ -302,41 +297,41 @@
    "name": "Courser",
    "top_speed": 13.37
   },
-  "mp_empire_horse_war_charger": {
-   "name": "Imperial Charger",
-   "top_speed": 12.28
+  "mp_empire_horse_agile": {
+   "name": "Midlands Palfrey",
+   "top_speed": 13.56
   },
   "mp_empire_horse_war_agile": {
    "name": "War Courser",
    "top_speed": 13.37
   },
+  "mp_empire_horse_war_charger": {
+   "name": "Imperial Charger",
+   "top_speed": 12.28
+  },
   "mp_empire_horse_war": {
    "name": "Imperial Warhorse",
    "top_speed": 11.68
-  },
-  "mp_khuzait_horse_agile": {
-   "name": "Tarpan",
-   "top_speed": 12.87
   },
   "mp_khuzait_horse_charger": {
    "name": "Steppe Charger",
    "top_speed": 12.58
   },
+  "mp_khuzait_horse_agile": {
+   "name": "Tarpan",
+   "top_speed": 12.87
+  },
   "mp_khuzait_horse": {
    "name": "Steppe Horse",
    "top_speed": 12.58
-  },
-  "mp_khuzait_horse_tougher": {
-   "name": "Makeb Horse",
-   "top_speed": 11.98
   },
   "mp_khuzait_horse_war": {
    "name": "Steppe Warhorse",
    "top_speed": 11.98
   },
-  "mp_aserai_horse_agile": {
-   "name": "Nahasan",
-   "top_speed": 14.06
+  "mp_khuzait_horse_tougher": {
+   "name": "Makeb Horse",
+   "top_speed": 11.98
   },
   "mp_aserai_camel": {
    "name": "Husnphree",
@@ -345,6 +340,10 @@
   "mp_aserai_horse": {
    "name": "Desert horse",
    "top_speed": 14.01
+  },
+  "mp_aserai_horse_agile": {
+   "name": "Nahasan",
+   "top_speed": 14.06
   },
   "mp_aserai_horse_war_faster": {
    "name": "Tough Nahasan",
@@ -358,13 +357,13 @@
    "name": "Barb Horse",
    "top_speed": 13.56
   },
-  "mp_sturgia_horse_war": {
-   "name": "Tyal Horse",
-   "top_speed": 12.28
-  },
   "mp_sturgia_horse": {
    "name": "Trotter",
    "top_speed": 13.37
+  },
+  "mp_sturgia_horse_war": {
+   "name": "Tyal Horse",
+   "top_speed": 12.28
   },
   "mp_sturgia_horse_tougher": {
    "name": "Tougher Tyal Horse",
@@ -378,728 +377,609 @@
    "name": "Agile Dale Pony",
    "top_speed": 13.37
   },
-  "mp_battania_horse_war": {
-   "name": "Fell Pony",
-   "top_speed": 12.28
-  },
   "mp_battania_pony": {
    "name": "Dale Pony",
    "top_speed": 12.87
+  },
+  "mp_battania_horse_war": {
+   "name": "Fell Pony",
+   "top_speed": 12.28
   }
  },
- "setups": [
-  {
-   "class": "Aserai heavy cavalry",
-   "weapon": "mp_aserai_heavy_lance",
-   "speed_bonus": 0.33,
-   "horse": "mp_aserai_horse_war",
-   "perks": [
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Aserai heavy cavalry",
-   "weapon": "mp_aserai_heavy_lance",
-   "speed_bonus": 0.33,
-   "horse": "mp_aserai_horse_war_agile",
-   "perks": [
-    "Agile Horse",
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Aserai heavy cavalry",
-   "weapon": "mp_aserai_heavy_lance",
-   "speed_bonus": 0.33,
-   "horse": "mp_aserai_horse_war_faster",
-   "perks": [
-    "Faster Horse",
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_aserai_camel",
-   "perks": [
-    "Camel",
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_camel",
-   "perks": [
-    "Camel"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_aserai_horse",
-   "perks": [
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_horse",
-   "perks": []
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_aserai_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_horse_agile",
-   "perks": [
-    "Agile Horse"
-   ]
-  },
-  {
-   "class": "Aserai heavy cavalry",
-   "weapon": "mp_aserai_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_horse_war",
-   "perks": [
-    "Goliath"
-   ]
-  },
-  {
-   "class": "Aserai heavy cavalry",
-   "weapon": "mp_aserai_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_horse_war_agile",
-   "perks": [
-    "Agile Horse",
-    "Goliath"
-   ]
-  },
-  {
-   "class": "Aserai heavy cavalry",
-   "weapon": "mp_aserai_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_horse_war_faster",
-   "perks": [
-    "Faster Horse",
-    "Goliath"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_bamboo_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_camel",
-   "perks": [
-    "Camel",
-    "Bamboo Spear"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_bamboo_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_horse",
-   "perks": [
-    "Bamboo Spear"
-   ]
-  },
-  {
-   "class": "Aserai light cavalry",
-   "weapon": "mp_aserai_bamboo_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_aserai_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Bamboo Spear"
-   ]
-  },
-  {
-   "class": "Battania light cavalry",
-   "weapon": "mp_battania_cavalry_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_battania_horse_war",
-   "perks": [
-    "Tougher Horse",
-    "Line Breaker"
-   ]
-  },
-  {
-   "class": "Battania light cavalry",
-   "weapon": "mp_battania_cavalry_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_battania_pony",
-   "perks": [
-    "Line Breaker"
-   ]
-  },
-  {
-   "class": "Battania light cavalry",
-   "weapon": "mp_battania_cavalry_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_battania_pony_agile",
-   "perks": [
-    "Agile Horse",
-    "Line Breaker"
-   ]
-  },
-  {
-   "class": "Battania light cavalry",
-   "weapon": "mp_battania_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_battania_horse_war",
-   "perks": [
-    "Tougher Horse"
-   ]
-  },
-  {
-   "class": "Battania light cavalry",
-   "weapon": "mp_battania_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_battania_pony",
-   "perks": []
-  },
-  {
-   "class": "Battania light cavalry",
-   "weapon": "mp_battania_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_battania_pony_agile",
-   "perks": [
-    "Agile Horse"
-   ]
-  },
-  {
-   "class": "Sturgia light cavalry",
-   "weapon": "mp_sturgia_great_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_war",
-   "perks": [
-    "Tougher Horse",
-    "Spearhead"
-   ]
-  },
-  {
-   "class": "Sturgia light cavalry",
-   "weapon": "mp_sturgia_great_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse",
-   "perks": [
-    "Spearhead"
-   ]
-  },
-  {
-   "class": "Khuzait heavy cavalry",
-   "weapon": "mp_khuzait_heavy_glaive",
-   "speed_bonus": 0.0,
-   "horse": "mp_khuzait_horse_tougher",
-   "perks": [
-    "Glaive",
-    "Tougher Horse"
-   ]
-  },
-  {
-   "class": "Khuzait heavy cavalry",
-   "weapon": "mp_khuzait_heavy_glaive",
-   "speed_bonus": 0.0,
-   "horse": "mp_khuzait_horse_war",
-   "perks": [
-    "Glaive"
-   ]
-  },
-  {
-   "class": "Empire heavy cavalry",
-   "weapon": "mp_empire_heavy_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_war",
-   "perks": [
-    "Armored Spearhead"
-   ]
-  },
-  {
-   "class": "Empire heavy cavalry",
-   "weapon": "mp_empire_heavy_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_war_charger",
-   "perks": [
-    "Charger Horse",
-    "Armored Spearhead"
-   ]
-  },
-  {
-   "class": "Empire heavy cavalry",
-   "weapon": "mp_empire_heavy_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_war_agile",
-   "perks": [
-    "Flanker",
-    "Armored Spearhead"
-   ]
-  },
-  {
-   "class": "Khuzait light cavalry",
-   "weapon": "mp_khuzait_cavalry_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_khuzait_horse_charger",
-   "perks": [
-    "Charger Horse",
-    "Line Breaker"
-   ]
-  },
-  {
-   "class": "Khuzait light cavalry",
-   "weapon": "mp_khuzait_cavalry_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_khuzait_horse",
-   "perks": [
-    "Line Breaker"
-   ]
-  },
-  {
-   "class": "Khuzait light cavalry",
-   "weapon": "mp_khuzait_cavalry_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_khuzait_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Line Breaker"
-   ]
-  },
-  {
-   "class": "Khuzait heavy cavalry",
-   "weapon": "mp_khuzait_lance_heavy",
-   "speed_bonus": 0.0,
-   "horse": "mp_khuzait_horse_tougher",
-   "perks": [
-    "Tougher Horse"
-   ]
-  },
-  {
-   "class": "Khuzait heavy cavalry",
-   "weapon": "mp_khuzait_lance_heavy",
-   "speed_bonus": 0.0,
-   "horse": "mp_khuzait_horse_war",
-   "perks": []
-  },
-  {
-   "class": "Khuzait heavy cavalry",
-   "weapon": "mp_khuzait_lance_long",
-   "speed_bonus": 0.33,
-   "horse": "mp_khuzait_horse_tougher",
-   "perks": [
-    "Lancer",
-    "Tougher Horse"
-   ]
-  },
-  {
-   "class": "Khuzait heavy cavalry",
-   "weapon": "mp_khuzait_lance_long",
-   "speed_bonus": 0.33,
-   "horse": "mp_khuzait_horse_war",
-   "perks": [
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Khuzait light cavalry",
-   "weapon": "mp_khuzait_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_khuzait_horse_charger",
-   "perks": [
-    "Charger Horse"
-   ]
-  },
-  {
-   "class": "Khuzait light cavalry",
-   "weapon": "mp_khuzait_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_khuzait_horse",
-   "perks": []
-  },
-  {
-   "class": "Khuzait light cavalry",
-   "weapon": "mp_khuzait_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_khuzait_horse_agile",
-   "perks": [
-    "Agile Horse"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_heavy_lance",
-   "speed_bonus": 0.33,
-   "horse": "mp_sturgia_horse_tougher",
-   "perks": [
-    "Tougher Horse",
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_heavy_lance",
-   "speed_bonus": 0.33,
-   "horse": "mp_sturgia_horse_war",
-   "perks": [
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_heavy_lance",
-   "speed_bonus": 0.33,
-   "horse": "mp_sturgia_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_tougher",
-   "perks": [
-    "Tougher Horse"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_war",
-   "perks": []
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_agile",
-   "perks": [
-    "Agile Horse"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_tougher",
-   "perks": [
-    "Tougher Horse",
-    "Druzhina"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_war",
-   "perks": [
-    "Druzhina"
-   ]
-  },
-  {
-   "class": "Sturgia heavy cavalry",
-   "weapon": "mp_sturgia_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Druzhina"
-   ]
-  },
-  {
-   "class": "Sturgia light cavalry",
-   "weapon": "mp_sturgia_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_sturgia_horse_war",
-   "perks": [
-    "Tougher Horse",
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Sturgia light cavalry",
-   "weapon": "mp_sturgia_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse_war",
-   "perks": [
-    "Tougher Horse"
-   ]
-  },
-  {
-   "class": "Sturgia light cavalry",
-   "weapon": "mp_sturgia_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_sturgia_horse",
-   "perks": [
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Sturgia light cavalry",
-   "weapon": "mp_sturgia_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_sturgia_horse",
-   "perks": []
-  },
-  {
-   "class": "Vlandia heavy cavalry",
-   "weapon": "mp_vlandian_heavy_lance",
-   "speed_bonus": 0.15,
-   "horse": "mp_vlandia_horse_war_tougher",
-   "perks": [
-    "Tougher Horse",
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Vlandia heavy cavalry",
-   "weapon": "mp_vlandian_heavy_lance",
-   "speed_bonus": 0.15,
-   "horse": "mp_vlandia_horse_war",
-   "perks": [
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Vlandia heavy cavalry",
-   "weapon": "mp_vlandian_heavy_lance",
-   "speed_bonus": 0.15,
-   "horse": "mp_vlandia_horse_war_faster",
-   "perks": [
-    "Flanker",
-    "Lancer"
-   ]
-  },
-  {
-   "class": "Vlandia heavy cavalry",
-   "weapon": "mp_western_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse_war_tougher",
-   "perks": [
-    "Tougher Horse"
-   ]
-  },
-  {
-   "class": "Vlandia heavy cavalry",
-   "weapon": "mp_western_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse_war",
-   "perks": []
-  },
-  {
-   "class": "Vlandia heavy cavalry",
-   "weapon": "mp_western_long_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse_war_faster",
-   "perks": [
-    "Flanker"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_cavalry_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse",
-   "perks": [
-    "Cavalry Spear"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_cavalry_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Cavalry Spear"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_cavalry_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_faster",
-   "perks": [
-    "Faster Horse",
-    "Cavalry Spear"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_cavalry_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse",
-   "perks": [
-    "Cavalry Spear"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_cavalry_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Cavalry Spear"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_cavalry_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse_faster",
-   "perks": [
-    "Faster Horse",
-    "Cavalry Spear"
-   ]
-  },
-  {
-   "class": "Empire heavy cavalry",
-   "weapon": "mp_western_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_war",
-   "perks": []
-  },
-  {
-   "class": "Empire heavy cavalry",
-   "weapon": "mp_western_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_war_charger",
-   "perks": [
-    "Charger Horse"
-   ]
-  },
-  {
-   "class": "Empire heavy cavalry",
-   "weapon": "mp_western_lance",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_war_agile",
-   "perks": [
-    "Flanker"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_empire_horse",
-   "perks": [
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse",
-   "perks": []
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_empire_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_agile",
-   "perks": [
-    "Agile Horse"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_empire_horse_faster",
-   "perks": [
-    "Faster Horse",
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Empire light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_empire_horse_faster",
-   "perks": [
-    "Faster Horse"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse",
-   "perks": []
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_vlandia_horse",
-   "perks": [
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse_agile",
-   "perks": [
-    "Agile Horse"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_vlandia_horse_agile",
-   "perks": [
-    "Agile Horse",
-    "Ride Like the Wind"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.0,
-   "horse": "mp_vlandia_horse_faster",
-   "perks": [
-    "Faster Horse"
-   ]
-  },
-  {
-   "class": "Vlandia light cavalry",
-   "weapon": "mp_western_long_spear",
-   "speed_bonus": 0.5,
-   "horse": "mp_vlandia_horse_faster",
-   "perks": [
-    "Faster Horse",
-    "Ride Like the Wind"
+ "classes": [
+  {
+   "id": "mp_heavy_cavalry_aserai",
+   "name": "Aserai heavy cavalry",
+   "base": {
+    "Item0": "mp_aserai_noble_curved_long_sword",
+    "Item1": "mp_bound_adarga",
+    "Item2": "mp_aserai_long_spear",
+    "Horse": "mp_aserai_horse_war"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Faster Horse",
+      "equip": {
+       "Horse": "mp_aserai_horse_war_faster"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Agile Horse",
+      "equip": {
+       "Horse": "mp_aserai_horse_war_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Full Barding",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Goliath",
+      "equip": {
+       "Item1": "mp_emirs_oval_shield",
+       "Item2": "mp_aserai_long_lance"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Lancer",
+      "equip": {
+       "Item2": "mp_aserai_heavy_lance"
+      },
+      "speed": 0.33
+     },
+     {
+      "name": "Royal Archer",
+      "equip": {
+       "Item3": "mp_short_bow",
+       "Item2": "mp_arrows_barbed_mounted"
+      },
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_light_cavalry_aserai",
+   "name": "Aserai light cavalry",
+   "base": {
+    "Item0": "mp_aserai_long_spear",
+    "Item1": "mp_aserai_ranger_sword",
+    "Item2": "mp_desert_round_shield",
+    "Horse": "mp_aserai_horse"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Agile Horse",
+      "equip": {
+       "Horse": "mp_aserai_horse_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Camel",
+      "equip": {
+       "Horse": "mp_aserai_camel"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Improved Armor",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Ride Like the Wind",
+      "equip": {},
+      "speed": 0.5
+     },
+     {
+      "name": "Mounted Skirmish",
+      "equip": {
+       "Item3": "mp_javelin"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Bamboo Spear",
+      "equip": {
+       "Item0": "mp_aserai_bamboo_spear"
+      },
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_light_cavalry_battania",
+   "name": "Battania light cavalry",
+   "base": {
+    "Item0": "mp_battania_long_spear",
+    "Item1": "mp_battania_cavalry_sword",
+    "Item2": "mp_highland_riders_shield",
+    "Horse": "mp_battania_pony"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Agile Horse",
+      "equip": {
+       "Horse": "mp_battania_pony_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Tougher Horse",
+      "equip": {
+       "Horse": "mp_battania_horse_war"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Cured Leather Armor",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Line Breaker",
+      "equip": {
+       "Item0": "mp_battania_cavalry_spear"
+      },
+      "speed": 0.5
+     },
+     {
+      "name": "Half Barding",
+      "equip": {},
+      "speed": 0.0
+     },
+     {
+      "name": "Mounted Skirmish",
+      "equip": {
+       "Item3": "mp_battania_javelin"
+      },
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_heavy_cavalry_empire",
+   "name": "Empire heavy cavalry",
+   "base": {
+    "Item0": "mp_western_lance",
+    "Item1": "mp_empire_paramerion",
+    "Item2": "mp_studded_round_shield",
+    "Horse": "mp_empire_horse_war"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Charger Horse",
+      "equip": {
+       "Horse": "mp_empire_horse_war_charger"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Flanker",
+      "equip": {
+       "Horse": "mp_empire_horse_war_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Reinforced Armor",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Armored Spearhead",
+      "equip": {
+       "Item0": "mp_empire_heavy_lance"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Blood Rage",
+      "equip": {},
+      "speed": 0.0
+     },
+     {
+      "name": "Dragoon",
+      "equip": {
+       "Item1": "mp_empire_battle_axe"
+      },
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_light_cavalry_empire",
+   "name": "Empire light cavalry",
+   "base": {
+    "Item0": "mp_western_long_spear",
+    "Item1": "mp_empire_long_spatha",
+    "Item2": "mp_studded_round_shield",
+    "Horse": "mp_empire_horse"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Agile Horse",
+      "equip": {
+       "Horse": "mp_empire_horse_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Faster Horse",
+      "equip": {
+       "Horse": "mp_empire_horse_faster"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Extra Chainmail",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Ride Like the Wind",
+      "equip": {},
+      "speed": 0.5
+     },
+     {
+      "name": "Auxiliary",
+      "equip": {},
+      "speed": 0.0
+     },
+     {
+      "name": "Cavalry Spear",
+      "equip": {
+       "Item0": "mp_western_cavalry_spear"
+      },
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_heavy_cavalry_khuzait",
+   "name": "Khuzait heavy cavalry",
+   "base": {
+    "Item0": "mp_khuzait_lance_heavy",
+    "Item1": "mp_khuzait_cavalry_mace",
+    "Item2": "mp_steppe_guardian_shield",
+    "Horse": "mp_khuzait_horse_war"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Lancer",
+      "equip": {
+       "Item0": "mp_khuzait_lance_long"
+      },
+      "speed": 0.33
+     },
+     {
+      "name": "Glaive",
+      "equip": {
+       "Item0": "mp_khuzait_heavy_glaive"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Full Barding",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Tougher Horse",
+      "equip": {
+       "Horse": "mp_khuzait_horse_tougher"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Royal Archer",
+      "equip": {
+       "Item3": "mp_short_bow",
+       "Item2": "mp_arrows_steppe_mounted"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Masked Nightmare",
+      "equip": {},
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_light_cavalry_khuzait",
+   "name": "Khuzait light cavalry",
+   "base": {
+    "Item0": "mp_khuzait_long_spear",
+    "Item1": "mp_khuzait_heavy_sabre",
+    "Horse": "mp_khuzait_horse"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Agile Horse",
+      "equip": {
+       "Horse": "mp_khuzait_horse_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Charger Horse",
+      "equip": {
+       "Horse": "mp_khuzait_horse_charger"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Improved Armor",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Nomad Archer",
+      "equip": {
+       "Item3": "mp_hunting_bow",
+       "Item2": "mp_arrows_steppe_mounted"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Small Shield",
+      "equip": {
+       "Item2": "mp_steppe_guardian_shield"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Line Breaker",
+      "equip": {
+       "Item0": "mp_khuzait_cavalry_spear"
+      },
+      "speed": 0.5
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_heavy_cavalry_sturgia",
+   "name": "Sturgia heavy cavalry",
+   "base": {
+    "Item0": "mp_sturgia_cavalry_axe",
+    "Item1": "mp_worn_horsemans_kite_shield",
+    "Item2": "mp_sturgia_lance",
+    "Horse": "mp_sturgia_horse_war"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Tougher Horse",
+      "equip": {
+       "Horse": "mp_sturgia_horse_tougher"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Agile Horse",
+      "equip": {
+       "Horse": "mp_sturgia_horse_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Full Barding",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Druzhina",
+      "equip": {
+       "Item2": "mp_sturgia_long_lance"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Lancer",
+      "equip": {
+       "Item2": "mp_sturgia_heavy_lance"
+      },
+      "speed": 0.33
+     },
+     {
+      "name": "Unbreakable",
+      "equip": {
+       "Item1": "mp_viking_round_shield"
+      },
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_light_cavalry_sturgia",
+   "name": "Sturgia light cavalry",
+   "base": {
+    "Item0": "mp_sturgia_long_spear",
+    "Item1": "mp_sturgia_heavy_axe",
+    "Item2": "mp_northern_scouts_shield",
+    "Horse": "mp_sturgia_horse"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Tougher Horse",
+      "equip": {
+       "Horse": "mp_sturgia_horse_war"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Looted Horse",
+      "equip": {},
+      "speed": 0.0
+     },
+     {
+      "name": "Improved Armor",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Ride Like the Wind",
+      "equip": {},
+      "speed": 0.5
+     },
+     {
+      "name": "Spearhead",
+      "equip": {
+       "Item0": "mp_sturgia_great_spear"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Blood Money",
+      "equip": {},
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_heavy_cavalry_vlandia",
+   "name": "Vlandia heavy cavalry",
+   "base": {
+    "Item0": "mp_western_long_lance",
+    "Item1": "mp_western_riders_kite_shield",
+    "Item2": "mp_vlandia_cavalry_sword",
+    "Horse": "mp_vlandia_horse_war"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Tougher Horse",
+      "equip": {
+       "Horse": "mp_vlandia_horse_war_tougher"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Flanker",
+      "equip": {
+       "Horse": "mp_vlandia_horse_war_faster"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Reinforced Armor",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Guardian",
+      "equip": {
+       "Item1": "mp_wide_heater_shield"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Lancer",
+      "equip": {
+       "Item0": "mp_vlandian_heavy_lance"
+      },
+      "speed": 0.15
+     },
+     {
+      "name": "Generous Lord",
+      "equip": {},
+      "speed": 0.0
+     }
+    ]
+   ]
+  },
+  {
+   "id": "mp_light_cavalry_vlandia",
+   "name": "Vlandia light cavalry",
+   "base": {
+    "Item0": "mp_western_long_spear",
+    "Item1": "mp_vlandian_cavalry_mace",
+    "Item2": "mp_western_riders_kite_shield",
+    "Horse": "mp_vlandia_horse"
+   },
+   "perk_lists": [
+    [
+     {
+      "name": "Faster Horse",
+      "equip": {
+       "Horse": "mp_vlandia_horse_faster"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Agile Horse",
+      "equip": {
+       "Horse": "mp_vlandia_horse_agile"
+      },
+      "speed": 0.0
+     },
+     {
+      "name": "Barding",
+      "equip": {},
+      "speed": 0.0
+     }
+    ],
+    [
+     {
+      "name": "Extra Chainmail",
+      "equip": {},
+      "speed": 0.0
+     },
+     {
+      "name": "Ride Like the Wind",
+      "equip": {},
+      "speed": 0.5
+     },
+     {
+      "name": "Cavalry Spear",
+      "equip": {
+       "Item0": "mp_western_cavalry_spear"
+      },
+      "speed": 0.0
+     }
+    ]
    ]
   }
  ]

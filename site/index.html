@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MPBalancer (Native+): changelog and thrust damage</title>
+<title>MPBalancer (Native+): changelog and lance damage</title>
 <style>
   .viz-root {
     color-scheme: light;
@@ -15,10 +15,14 @@
     --grid: #e1e0d9;
     --axis: #c3c2b7;
     --border: rgba(11, 11, 11, 0.10);
-    --series-1: #2a78d6;
-    --series-2: #eb6834;
-    --series-3: #1baf7a;
     --wash: rgba(11, 11, 11, 0.04);
+    --brush: rgba(42, 120, 214, 0.12);
+    /* Armor 0 -> 55: ordinal blue, light to dark (validated --ordinal). */
+    --armor-0: #86b6ef;
+    --armor-1: #5598e7;
+    --armor-2: #2a78d6;
+    --armor-3: #1c5cab;
+    --armor-4: #0d366b;
   }
   @media (prefers-color-scheme: dark) {
     :root:where(:not([data-theme="light"])) .viz-root {
@@ -31,10 +35,14 @@
       --grid: #2c2c2a;
       --axis: #383835;
       --border: rgba(255, 255, 255, 0.10);
-      --series-1: #3987e5;
-      --series-2: #d95926;
-      --series-3: #199e70;
       --wash: rgba(255, 255, 255, 0.05);
+      --brush: rgba(57, 135, 229, 0.18);
+      /* On dark, more armor = lighter (more contrast), validated --ordinal. */
+      --armor-0: #184f95;
+      --armor-1: #256abf;
+      --armor-2: #3987e5;
+      --armor-3: #86b6ef;
+      --armor-4: #cde2fb;
     }
   }
   :root[data-theme="dark"] .viz-root {
@@ -47,10 +55,13 @@
     --grid: #2c2c2a;
     --axis: #383835;
     --border: rgba(255, 255, 255, 0.10);
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
     --wash: rgba(255, 255, 255, 0.05);
+    --brush: rgba(57, 135, 229, 0.18);
+    --armor-0: #184f95;
+    --armor-1: #256abf;
+    --armor-2: #3987e5;
+    --armor-3: #86b6ef;
+    --armor-4: #cde2fb;
   }
 
   body { margin: 0; }
@@ -60,81 +71,72 @@
     font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
     min-height: 100vh;
   }
-  main { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
+  main { max-width: 1560px; margin: 0 auto; padding: 24px 24px 64px; }
+  .narrow { max-width: 1000px; }
   header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
   h1 { font-size: 26px; margin: 0 0 4px; }
-  h2 { font-size: 20px; margin: 32px 0 8px; }
-  a { color: var(--series-1); }
   .muted { color: var(--text-secondary); }
-  .card {
-    background: var(--surface-1);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 16px 20px;
-  }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
   nav.tabs { display: flex; gap: 4px; margin: 16px 0; }
-  nav.tabs button, .chip, .ghost {
-    font: inherit;
-    color: var(--text-primary);
-    background: transparent;
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 4px 12px;
-    cursor: pointer;
+  button.chip, button.ghost, nav.tabs button {
+    font: inherit; color: var(--text-primary); background: transparent;
+    border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; cursor: pointer;
   }
   nav.tabs button[aria-selected="true"], .chip[aria-pressed="true"] {
-    background: var(--text-primary);
-    color: var(--surface-1);
-    border-color: var(--text-primary);
+    background: var(--text-primary); color: var(--surface-1); border-color: var(--text-primary);
   }
-  .chip:hover, .ghost:hover, nav.tabs button:hover { background: var(--wash); }
-  .chip[aria-pressed="true"]:hover { background: var(--text-secondary); }
+  button.chip:hover, button.ghost:hover, nav.tabs button:hover { background: var(--wash); }
+  .chip[aria-pressed="true"]:hover, nav.tabs button[aria-selected="true"]:hover { background: var(--text-secondary); }
+  button:disabled { opacity: 0.4; cursor: default; }
 
   /* Changelog */
   #changelog h1 { display: none; }
-  #changelog h2 { margin-top: 24px; }
+  #changelog h2 { margin-top: 24px; font-size: 20px; }
   #changelog code { font-size: 13px; background: var(--wash); padding: 1px 4px; border-radius: 4px; }
   #changelog li { margin: 4px 0; }
 
   /* Explorer */
-  .filters { display: flex; flex-wrap: wrap; gap: 16px 24px; align-items: center; margin-bottom: 12px; }
-  .filters .group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-  .filters .label { color: var(--text-secondary); font-size: 13px; margin-right: 2px; }
-  .setups { display: grid; gap: 8px; margin-bottom: 16px; }
-  .setup { display: grid; grid-template-columns: 14px minmax(160px, 1fr) minmax(220px, 2fr) auto; gap: 10px; align-items: center; }
-  .swatch { width: 14px; height: 3px; border-radius: 2px; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; margin-bottom: 16px; }
+  .toolbar .label { color: var(--text-secondary); font-size: 13px; margin-right: 4px; }
+  .graphs { display: grid; grid-template-columns: repeat(auto-fill, minmax(640px, 1fr)); gap: 16px; }
+  .graph { display: flex; flex-direction: column; gap: 10px; position: relative; }
+  .pickers { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; }
+  .pickers label { display: flex; flex-direction: column; font-size: 12px; color: var(--text-secondary); gap: 2px; }
   select {
-    font: inherit; font-size: 14px;
-    color: var(--text-primary); background: var(--surface-1);
-    border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px;
-    min-width: 0;
+    font: inherit; font-size: 14px; color: var(--text-primary); background: var(--surface-1);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 6px; min-width: 0;
   }
-  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--text-secondary); margin: 4px 0 10px; }
-  .legend span { display: inline-flex; align-items: center; gap: 6px; }
-  .legend svg { overflow: visible; }
-  .panels { display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 16px; }
-  .panel { position: relative; }
-  .panel h3 { font-size: 14px; font-weight: 600; margin: 0 0 4px; }
-  .panel svg { display: block; width: 100%; height: auto; }
-  .panel text { font: 11px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
-  .panel text.value { fill: var(--text-primary); font-weight: 600; }
+  .pickers .remove { margin-left: auto; }
+  .loadout { font-size: 13px; color: var(--text-secondary); }
+  .loadout b { color: var(--text-primary); font-weight: 600; }
+  .body { display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 12px; align-items: start; }
+  .chart { position: relative; }
+  .chart svg { display: block; width: 100%; height: auto; touch-action: pan-y; user-select: none; }
+  .chart text { font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; fill: var(--text-muted); font-variant-numeric: tabular-nums; }
+  .zoom-note { font-size: 12px; color: var(--text-muted); display: flex; gap: 8px; align-items: center; min-height: 26px; }
+  .legend { font-size: 13px; display: flex; flex-direction: column; gap: 4px; }
+  .legend .head { color: var(--text-secondary); font-size: 12px; margin-bottom: 2px; }
+  .legend .row { display: grid; grid-template-columns: 36px 1fr auto; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; }
+  .legend .row .v { color: var(--text-primary); font-weight: 600; }
+  .legend .row .van { color: var(--text-muted); font-weight: 400; }
+  .legend .key { margin-top: 8px; color: var(--text-secondary); font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+  .legend .key span { display: inline-flex; gap: 6px; align-items: center; }
+  .empty { padding: 48px 12px; text-align: center; color: var(--text-secondary); }
   .tooltip {
     position: absolute; pointer-events: none; z-index: 2;
     background: var(--surface-1); color: var(--text-primary);
-    border: 1px solid var(--border); border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-    padding: 8px 10px; font-size: 12px; line-height: 1.45; white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+    border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    padding: 8px 10px; font-size: 12px; line-height: 1.5; white-space: nowrap; font-variant-numeric: tabular-nums;
   }
-  .tooltip .row { display: flex; align-items: center; gap: 6px; }
+  .tooltip .row { display: flex; gap: 6px; align-items: center; }
   .tooltip .row b { font-weight: 600; }
-  table { border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; width: 100%; }
-  th, td { text-align: right; padding: 4px 8px; border-bottom: 1px solid var(--grid); }
-  th:first-child, td:first-child { text-align: left; }
-  thead th { color: var(--text-secondary); font-weight: 600; }
-  .table-wrap { overflow-x: auto; margin-top: 12px; }
-  .note { font-size: 13px; color: var(--text-secondary); margin-top: 12px; }
+  .tooltip .muted { color: var(--text-muted); }
+  .note { font-size: 13px; color: var(--text-secondary); margin-top: 16px; }
   footer { margin-top: 40px; font-size: 13px; color: var(--text-muted); }
+  @media (max-width: 720px) {
+    .graphs { grid-template-columns: 1fr; }
+    .body { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
@@ -150,61 +152,45 @@
 
   <nav class="tabs" role="tablist">
     <button role="tab" aria-selected="true" data-tab="changelog-tab">Changelog</button>
-    <button role="tab" aria-selected="false" data-tab="explorer-tab">Thrust damage explorer</button>
+    <button role="tab" aria-selected="false" data-tab="explorer-tab">Lance and spear damage</button>
   </nav>
 
-  <section id="changelog-tab" class="card">
+  <section id="changelog-tab" class="card narrow">
     <div id="changelog">Loading…</div>
   </section>
 
   <section id="explorer-tab" hidden>
-    <div class="card">
-      <p class="muted" style="margin-top:0">Damage of a full thrust from horseback by closing speed (how fast attacker and target move toward each
-        other along the thrust), with the mod (solid) and in vanilla (dashed). Pick up to three setups to compare: a weapon and how
-        you can spawn with it (class, perks, horse). Dots mark each horse's top speed: a full-gallop hit into a standing target.</p>
-      <div class="setups" id="setups"></div>
-      <div class="filters">
-        <div class="group"><span class="label">Target</span>
-          <button class="chip" data-target="player" aria-pressed="true">Player</button>
-          <button class="chip" data-target="horse" aria-pressed="false">Horse</button>
-        </div>
-        <div class="group"><span class="label">Hit</span>
-          <button class="chip" data-part="head" aria-pressed="true">Head</button>
-          <button class="chip" data-part="body" aria-pressed="false">Body</button>
-          <button class="chip" data-part="legs" aria-pressed="false">Legs</button>
-        </div>
-        <div class="group" id="armors"><span class="label">Armor</span></div>
-        <div class="group"><span class="label">Show</span>
-          <button class="chip" id="show-vanilla" aria-pressed="true">Vanilla</button>
-          <button class="chip" id="show-table" aria-pressed="false">Table</button>
-        </div>
+    <p class="muted" style="margin-top:0">Pick a class and its perks, as on the class selection screen: that gives the lance or spear, the
+      horse and any speed perk. Each graph shows a full thrust from horseback against a player at every armor level, with the mod
+      (solid) and in vanilla (dashed), by closing speed: how fast attacker and target move toward each other along the thrust.
+      Dots mark the horse's top speed, a full-gallop hit into a standing target. Drag across a graph to zoom in, double-click to
+      zoom back out.</p>
+    <div class="toolbar">
+      <div><span class="label">Hit</span>
+        <button class="chip" data-part="head" aria-pressed="true">Head</button>
+        <button class="chip" data-part="body" aria-pressed="false">Body</button>
+        <button class="chip" data-part="legs" aria-pressed="false">Legs</button>
       </div>
-      <div class="legend" id="legend"></div>
-      <div class="panels" id="panels"></div>
-      <div class="table-wrap" id="table" hidden></div>
-      <p class="note" id="note"></p>
+      <button class="ghost" id="add" type="button">+ Add a graph</button>
     </div>
+    <div class="graphs" id="graphs"></div>
+    <p class="note">Armor is the class's armor value (the same on every body part in multiplayer). Weapons with a changed base damage
+      (shown as vanilla+change) compare with the vanilla weapon, so they can beat vanilla at low speed. Real hits vary with how far
+      the thrust had extended, the angle and the exact speeds.</p>
   </section>
 
   <footer>Numbers come from the mod's current defaults and the game's data, using the same formulas as the server
-    (vanilla's thrust, the mod's speed curves and weapon changes, multiplayer armor). Real hits vary with how far the thrust
-    had extended, the angle and the exact speeds.</footer>
+    (vanilla's thrust, the mod's speed curves and weapon changes, multiplayer armor).</footer>
 </main>
 </div>
 
 <script>
 "use strict";
-const SERIES = ["var(--series-1)", "var(--series-2)", "var(--series-3)"];
 const ARMORS = [0, 10, 25, 40, 55];
-const PARTS = {
-  player: { head: 1.25, body: 1.0, legs: 0.8 },
-  horse: { head: 1.2, body: 0.8, legs: 0.8 },
-};
-const SPEEDS = Array.from({ length: 101 }, (_, i) => i / 4); // 0 to 25 m/s
-const state = {
-  target: "player", part: "head", armors: new Set([25, 55]), vanilla: true, table: false,
-  picks: [], // [{ weapon, setup index }]
-};
+const ARMOR_COLOR = ARMORS.map((_, i) => `var(--armor-${i})`);
+const PART = { head: 1.25, body: 1.0, legs: 0.8 }; // multiplayer melee pierce on players
+const MAX_GRAPHS = 4;
+const state = { part: "head", graphs: [] }; // graphs: [{ cls, perks: [index per list], weapon, zoom: [from, to] | null }]
 let DATA;
 
 // ---- Model (docs/mod-damage.md) -----------------------------------------------------------------------------------
@@ -213,243 +199,262 @@ function curveAt(values, v) {
   const i = Math.min(Math.floor(v), values.length - 1), j = Math.min(i + 1, values.length - 1);
   return (values[i] + (values[j] - values[i]) * (v - Math.floor(v))) / 100;
 }
-// Damage before armor and body part, for the mod and for vanilla (the vanilla weapon), at closing speed v.
-function strike(setup, v) {
-  const w = DATA.weapons[setup.weapon];
-  const t = w.thrust_speed / 11.764706, k = Math.sqrt(1 + setup.speed_bonus);
+// A loadout's damage at closing speed v and armor: the mod's, and vanilla's with the vanilla weapon.
+function damage(lo, v, armor) {
+  const w = DATA.weapons[lo.weapon];
+  const t = w.thrust_speed / 11.764706, k = Math.sqrt(1 + lo.speedBonus);
   const ratio = (1 + k * v / (2 * t)) ** 2;
-  const vanilla = w.listed * ratio;
-  const buffedVanilla = w.buffed * ratio;
-  const curve = curveAt(w.lance ? DATA.curves.lance : DATA.curves.spear, v);
-  const mult = (DATA.weapon_mult[setup.weapon] ?? 1) * (state.target === "horse" ? DATA.thrust_horse : 1);
-  return { mod: Math.min(buffedVanilla * curve * mult, buffedVanilla), vanilla };
-}
-function damage(setup, v, armor) {
-  const f = armorFactor(armor) * PARTS[state.target][state.part];
-  const s = strike(setup, v);
-  return { mod: s.mod * f, vanilla: s.vanilla * f };
+  const f = armorFactor(armor) * PART[state.part];
+  const buffed = w.buffed * ratio;
+  const curve = curveAt(w.lance ? DATA.curves.lance : DATA.curves.spear, v) * (DATA.weapon_mult[lo.weapon] ?? 1);
+  return { mod: Math.min(buffed * curve, buffed) * f, vanilla: w.listed * ratio * f };
 }
 
-// ---- Setup pickers ------------------------------------------------------------------------------------------------
+// The loadout a class spawns with for these perk picks: default equipment, each perk's replacements, the speed perks.
+function loadout(g) {
+  const cls = DATA.classes[g.cls];
+  const equip = { ...cls.base };
+  const picked = cls.perk_lists.map((list, i) => list[g.perks[i]]);
+  picked.forEach(p => Object.assign(equip, p.equip));
+  const weapons = [...new Set(["Item0", "Item1", "Item2", "Item3"].map(s => equip[s]).filter(id => DATA.weapons[id]))];
+  const weapon = weapons.includes(g.weapon) ? g.weapon : weapons[0];
+  const speedPerks = picked.filter(p => p.speed > 0);
+  return { weapons, weapon, horse: equip.Horse, speedBonus: speedPerks.reduce((s, p) => s + p.speed, 0), speedPerks };
+}
+
+// ---- DOM helpers ----------------------------------------------------------------------------------------------------
 const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs)) {
-    if (k === "text") e.textContent = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v); else e.setAttribute(k, v);
+    if (k === "text") e.textContent = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
   }
   kids.forEach(k => e.append(k));
   return e;
 };
-const setupsFor = weapon => DATA.setups.map((s, i) => [s, i]).filter(([s]) => s.weapon === weapon);
-function setupLabel(s) {
-  const h = DATA.horses[s.horse];
-  const perks = s.perks.length ? s.perks.join(", ") : "default perks";
-  return `${s.class}: ${perks} · ${h.name} (${h.top_speed.toFixed(1)} m/s)`;
-}
-function weaponLabel(id) {
-  const w = DATA.weapons[id];
-  const listed = w.buffed !== w.listed ? `${w.listed}${w.buffed > w.listed ? "+" : ""}${w.buffed - w.listed}` : `${w.listed}`;
-  return `${w.name} (${w.lance ? "lance" : "spear"}, ${listed})`;
-}
-function renderPickers() {
-  const box = document.getElementById("setups");
-  box.replaceChildren();
-  state.picks.forEach((p, n) => {
-    const weaponSel = el("select", { "aria-label": `Setup ${n + 1} weapon`, onchange: e => {
-      p.weapon = e.target.value; p.setup = setupsFor(p.weapon)[0][1]; update();
-    } });
-    Object.keys(DATA.weapons).forEach(id => weaponSel.append(el("option", { value: id, text: weaponLabel(id) })));
-    weaponSel.value = p.weapon;
-    const setupSel = el("select", { "aria-label": `Setup ${n + 1} class, perks and horse`, onchange: e => {
-      p.setup = Number(e.target.value); update();
-    } });
-    setupsFor(p.weapon).forEach(([s, i]) => setupSel.append(el("option", { value: i, text: setupLabel(s) })));
-    setupSel.value = p.setup;
-    const remove = el("button", { class: "ghost", type: "button", text: "Remove", onclick: () => { state.picks.splice(n, 1); update(); } });
-    if (state.picks.length === 1) remove.disabled = true;
-    box.append(el("div", { class: "setup" },
-      el("span", { class: "swatch", style: `background:${SERIES[n]}` }), weaponSel, setupSel, remove));
-  });
-  if (state.picks.length < 3) {
-    box.append(el("div", {}, el("button", { class: "ghost", type: "button", text: "+ Add a setup to compare", onclick: () => {
-      const used = new Set(state.picks.map(p => p.weapon));
-      const weapon = Object.keys(DATA.weapons).find(id => !used.has(id));
-      state.picks.push({ weapon, setup: setupsFor(weapon)[0][1] });
-      update();
-    } })));
-  }
-}
-
-// ---- Panels -------------------------------------------------------------------------------------------------------
 const NS = "http://www.w3.org/2000/svg";
-const svg = (tag, attrs = {}) => {
-  const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
-  return e;
-};
-const W = 540, H = 320, M = { l: 40, r: 40, t: 12, b: 36 };
-let clipId = 0;
-function niceMax(v) { const step = v > 150 ? 50 : 25; return Math.ceil(v / step) * step; }
+const svg = (tag, attrs = {}) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v); return e; };
+const listed = w => w.buffed !== w.listed ? `${w.listed}${w.buffed > w.listed ? "+" : "−"}${Math.abs(w.buffed - w.listed)}` : `${w.listed}`;
+const fmt = v => (Math.round(v * 10) / 10).toFixed(1).replace(/\.0$/, "");
 
-function renderPanels() {
-  const panels = document.getElementById("panels");
-  panels.replaceChildren();
-  const armors = ARMORS.filter(a => state.armors.has(a));
-  const picks = state.picks.map(p => DATA.setups[p.setup]);
-  // One y scale for every panel, so panels compare directly: the mod's curves in full, vanilla up to 16 m/s
-  // (vanilla keeps climbing steeply; beyond that it runs off the top).
-  let top = 0;
-  for (const a of armors) for (const s of picks) {
-    top = Math.max(top, damage(s, 25, a).mod);
-    if (state.vanilla) top = Math.max(top, damage(s, 16, a).vanilla);
+// ---- Graph cards ----------------------------------------------------------------------------------------------------
+const W = 520, H = 300, M = { l: 40, r: 12, t: 12, b: 40 };
+let clipCount = 0;
+
+// The y scale's top over a speed range: the mod's curves in full, vanilla up to 16 m/s (it keeps climbing; beyond that
+// it runs off the top). At full range it's shared by every graph, so they compare directly.
+function yTop(graphs, from = 0, to = 25) {
+  let top = 25;
+  for (const g of graphs) {
+    const lo = loadout(g);
+    if (!lo.weapon) continue;
+    for (let v = from; v <= to + 1e-9; v += 0.25) {
+      const d = damage(lo, v, ARMORS[0]);
+      top = Math.max(top, d.mod);
+      if (v <= 16) top = Math.max(top, d.vanilla);
+    }
   }
-  const yMax = niceMax(Math.max(top, 25));
-  const x = v => M.l + (W - M.l - M.r) * v / 25;
-  const y = d => H - M.b - (H - M.t - M.b) * d / yMax; // lines past the top are clipped, not flattened
-
-  for (const armor of armors) {
-    const panel = el("div", { class: "panel card" });
-    const what = state.target === "horse" ? `horse barding armor ${armor}` : `armor ${armor}`;
-    panel.append(el("h3", { text: `${what[0].toUpperCase()}${what.slice(1)}, ${state.part} hit` }));
-    const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img",
-      "aria-label": `Damage by closing speed at ${what}` });
-    const step = yMax > 150 ? 50 : 25;
-    for (let d = 0; d <= yMax; d += step) {
-      root.append(svg("line", { x1: M.l, x2: W - M.r, y1: y(d), y2: y(d), stroke: d === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1 }));
-      const t = svg("text", { x: M.l - 6, y: y(d) + 4, "text-anchor": "end" }); t.textContent = d; root.append(t);
-    }
-    for (let v = 0; v <= 25; v += 5) {
-      const t = svg("text", { x: x(v), y: H - M.b + 16, "text-anchor": "middle" }); t.textContent = v; root.append(t);
-    }
-    const xl = svg("text", { x: (M.l + W - M.r) / 2, y: H - 4, "text-anchor": "middle" });
-    xl.textContent = "closing speed (m/s)"; root.append(xl);
-
-    const clip = `plot-${clipId++}`;
-    const defs = svg("defs"), cp = svg("clipPath", { id: clip });
-    cp.append(svg("rect", { x: M.l, y: M.t - 2, width: W - M.l - M.r, height: H - M.t - M.b + 4 }));
-    defs.append(cp); root.append(defs);
-    const labels = [];
-    picks.forEach((s, n) => {
-      const color = SERIES[n];
-      const pts = SPEEDS.map(v => [v, damage(s, v, armor)]);
-      if (state.vanilla) {
-        root.append(svg("path", { d: "M" + pts.map(([v, d]) => `${x(v).toFixed(1)},${y(d.vanilla).toFixed(1)}`).join("L"),
-          fill: "none", stroke: color, "stroke-width": 1.5, "stroke-dasharray": "5 4", opacity: 0.85, "clip-path": `url(#${clip})` }));
-      }
-      root.append(svg("path", { d: "M" + pts.map(([v, d]) => `${x(v).toFixed(1)},${y(d.mod).toFixed(1)}`).join("L"),
-        fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
-      // The horse's top speed: marker with a surface ring, and its value.
-      const top = DATA.horses[s.horse].top_speed, d = damage(s, top, armor).mod;
-      root.append(svg("circle", { cx: x(top), cy: y(d), r: 5, fill: color, stroke: "var(--surface-1)", "stroke-width": 2 }));
-      labels.push({ x: x(top), y: y(d), text: Math.round(d) });
-    });
-    // Marker values above their dots, nudged apart so close horses don't overlap.
-    labels.sort((a, b) => a.y - b.y);
-    let last = -Infinity;
-    for (const l of labels) {
-      const ly = Math.max(l.y - 9, last + 13);
-      last = ly;
-      const t = svg("text", { class: "value", x: l.x + 7, y: ly });
-      t.textContent = l.text; root.append(t);
-    }
-
-    // Hover: crosshair and tooltip with every setup's values at that speed.
-    const cross = svg("line", { y1: M.t, y2: H - M.b, stroke: "var(--axis)", "stroke-width": 1, visibility: "hidden" });
-    root.append(cross);
-    const hit = svg("rect", { x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: "transparent" });
-    root.append(hit);
-    const tip = el("div", { class: "tooltip", hidden: "" });
-    hit.addEventListener("pointermove", ev => {
-      const r = root.getBoundingClientRect();
-      const px = (ev.clientX - r.left) * W / r.width;
-      const v = Math.max(0, Math.min(25, Math.round((px - M.l) / (W - M.l - M.r) * 25 * 4) / 4));
-      cross.setAttribute("x1", x(v)); cross.setAttribute("x2", x(v)); cross.setAttribute("visibility", "visible");
-      tip.replaceChildren(el("div", { text: `${v.toFixed(2).replace(/\.?0+$/, "")} m/s` }));
-      picks.forEach((s, n) => {
-        const d = damage(s, v, armor);
-        tip.append(el("div", { class: "row" }, el("span", { class: "swatch", style: `background:${SERIES[n]}` }),
-          el("span", { text: `${DATA.weapons[s.weapon].name}: ` }), el("b", { text: Math.round(d.mod) }),
-          el("span", { class: "muted", text: state.vanilla ? ` (vanilla ${Math.round(d.vanilla)})` : "" })));
-      });
-      tip.hidden = false;
-      const pr = panel.getBoundingClientRect();
-      const left = ev.clientX - pr.left + 14;
-      tip.style.left = Math.min(left, pr.width - tip.offsetWidth - 8) + "px";
-      tip.style.top = (ev.clientY - pr.top + 14) + "px";
-    });
-    hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); tip.hidden = true; });
-    panel.append(root, tip);
-    panels.append(panel);
-  }
-  if (!armors.length) panels.append(el("p", { class: "muted", text: "Pick at least one armor level." }));
+  const step = top > 150 ? 50 : top > 60 ? 25 : 10;
+  return Math.ceil(top / step) * step;
 }
 
-function renderLegend() {
-  const legend = document.getElementById("legend");
-  legend.replaceChildren();
-  state.picks.forEach((p, n) => {
-    const s = DATA.setups[p.setup];
-    const mark = svg("svg", { width: 22, height: 10 });
-    mark.append(svg("line", { x1: 0, x2: 22, y1: 5, y2: 5, stroke: SERIES[n], "stroke-width": 2 }));
-    legend.append(el("span", {}, mark, `${weaponLabel(s.weapon)} · ${setupLabel(s)}`));
+function renderGraph(g, n, yFull) {
+  const card = el("div", { class: "graph card" });
+  const cls = DATA.classes[g.cls];
+
+  // Class, then one perk per perk list, as in game.
+  const pickers = el("div", { class: "pickers" });
+  const clsSel = el("select", { onchange: e => {
+    g.cls = Number(e.target.value); g.perks = DATA.classes[g.cls].perk_lists.map(() => 0); g.weapon = null; g.zoom = null; render();
+  } });
+  DATA.classes.forEach((c, i) => clsSel.append(el("option", { value: i, text: c.name })));
+  clsSel.value = g.cls;
+  pickers.append(el("label", {}, "Class", clsSel));
+  cls.perk_lists.forEach((list, li) => {
+    const sel = el("select", { onchange: e => { g.perks[li] = Number(e.target.value); g.zoom = null; render(); } });
+    list.forEach((p, pi) => sel.append(el("option", { value: pi, text: p.name })));
+    sel.value = g.perks[li];
+    pickers.append(el("label", {}, `Perk ${li + 1}`, sel));
   });
-  if (state.vanilla) {
-    const mark = svg("svg", { width: 22, height: 10 });
-    mark.append(svg("line", { x1: 0, x2: 22, y1: 5, y2: 5, stroke: "var(--text-muted)", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
-    legend.append(el("span", {}, mark, "dashed: vanilla (vanilla weapon)"));
+  const lo = loadout(g);
+  if (lo.weapons.length > 1) {
+    const sel = el("select", { onchange: e => { g.weapon = e.target.value; render(); } });
+    lo.weapons.forEach(id => sel.append(el("option", { value: id, text: DATA.weapons[id].name })));
+    sel.value = lo.weapon;
+    pickers.append(el("label", {}, "Weapon", sel));
   }
-}
+  const remove = el("button", { class: "ghost remove", type: "button", text: "Remove", onclick: () => { state.graphs.splice(n, 1); render(); } });
+  if (state.graphs.length === 1) remove.disabled = true;
+  pickers.append(remove);
+  card.append(pickers);
 
-function renderTable() {
-  const box = document.getElementById("table");
-  box.hidden = !state.table;
-  if (!state.table) return;
-  const speeds = [0, 2, 4, 6, 8, 10, 12, 14, 16, 20, 25];
-  const head = el("tr", {}, el("th", { text: "Setup, armor" }), ...speeds.map(v => el("th", { text: `${v} m/s` })), el("th", { text: "Top speed" }));
-  const body = el("tbody");
-  for (const armor of ARMORS.filter(a => state.armors.has(a))) {
-    state.picks.forEach((p, n) => {
-      const s = DATA.setups[p.setup];
-      const cell = v => { const d = damage(s, v, armor); return state.vanilla ? `${Math.round(d.mod)} (${Math.round(d.vanilla)})` : `${Math.round(d.mod)}`; };
-      const top = DATA.horses[s.horse].top_speed;
-      body.append(el("tr", {}, el("td", {}, el("span", { class: "swatch", style: `display:inline-block;vertical-align:middle;margin-right:6px;background:${SERIES[n]}` }),
-        `${DATA.weapons[s.weapon].name}, armor ${armor}`), ...speeds.map(v => el("td", { text: cell(v) })),
-        el("td", { text: `${cell(top)} at ${top.toFixed(1)}` })));
+  if (!lo.weapon) {
+    card.append(el("div", { class: "empty", text: "No spear or lance in this loadout. Pick the perk that gives one." }));
+    return card;
+  }
+  const w = DATA.weapons[lo.weapon], horse = DATA.horses[lo.horse];
+  const speedText = lo.speedPerks.length
+    ? lo.speedPerks.map(p => `${p.name} (+${Math.round(p.speed * 100)}% speed bonus)`).join(", ") : "none";
+  card.append(el("div", { class: "loadout" },
+    el("b", { text: w.name }), ` (${w.lance ? "lance" : "spear"}, thrust ${listed(w)}, thrust speed ${w.thrust_speed}) · `,
+    el("b", { text: horse.name }), ` (top speed ${fmt(horse.top_speed)} m/s) · speed perk: ${speedText}`));
+
+  // Chart and legend side by side.
+  const body = el("div", { class: "body" });
+  const chart = el("div", { class: "chart" });
+  const [from, to] = g.zoom ?? [0, 25];
+  const span = to - from;
+  const yMax = g.zoom ? yTop([g], from, to) : yFull;
+  const x = v => M.l + (W - M.l - M.r) * (v - from) / span;
+  const y = d => H - M.b - (H - M.t - M.b) * d / yMax;
+  const root = svg("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": `${w.name} damage by closing speed for each armor level` });
+  const ystep = yMax > 150 ? 50 : yMax > 60 ? 25 : 10;
+  for (let d = 0; d <= yMax; d += ystep) {
+    root.append(svg("line", { x1: M.l, x2: W - M.r, y1: y(d), y2: y(d), stroke: d === 0 ? "var(--axis)" : "var(--grid)" }));
+    const t = svg("text", { x: M.l - 6, y: y(d) + 4, "text-anchor": "end" }); t.textContent = d; root.append(t);
+  }
+  const xstep = span > 12 ? 5 : span > 5 ? 2 : span > 2 ? 1 : 0.5;
+  for (let v = Math.ceil(from / xstep - 1e-9) * xstep; v <= to + 1e-9; v += xstep) {
+    const t = svg("text", { x: x(v), y: H - M.b + 16, "text-anchor": "middle" }); t.textContent = fmt(v); root.append(t);
+  }
+  const xl = svg("text", { x: (M.l + W - M.r) / 2, y: H - 6, "text-anchor": "middle" });
+  xl.textContent = "closing speed (m/s)"; root.append(xl);
+
+  const clip = `clip-${clipCount++}`;
+  const defs = svg("defs"), cp = svg("clipPath", { id: clip });
+  cp.append(svg("rect", { x: M.l, y: M.t - 4, width: W - M.l - M.r, height: H - M.t - M.b + 8 }));
+  defs.append(cp); root.append(defs);
+  const plot = svg("g", { "clip-path": `url(#${clip})` });
+  root.append(plot);
+  const speeds = [];
+  for (let i = 0; i <= 200; i++) speeds.push(from + span * i / 200);
+  // Least armor first, so the more armored lines draw on top.
+  ARMORS.forEach((armor, i) => {
+    const pts = speeds.map(v => [v, damage(lo, v, armor)]);
+    plot.append(svg("path", { d: "M" + pts.map(([v, d]) => `${x(v).toFixed(1)},${y(d.vanilla).toFixed(1)}`).join("L"),
+      fill: "none", stroke: ARMOR_COLOR[i], "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
+    plot.append(svg("path", { d: "M" + pts.map(([v, d]) => `${x(v).toFixed(1)},${y(d.mod).toFixed(1)}`).join("L"),
+      fill: "none", stroke: ARMOR_COLOR[i], "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  });
+  if (horse.top_speed >= from && horse.top_speed <= to) {
+    root.append(svg("line", { x1: x(horse.top_speed), x2: x(horse.top_speed), y1: M.t, y2: H - M.b, stroke: "var(--axis)", "stroke-dasharray": "2 3" }));
+    ARMORS.forEach((armor, i) => {
+      const d = damage(lo, horse.top_speed, armor).mod;
+      root.append(svg("circle", { cx: x(horse.top_speed), cy: y(d), r: 4.5, fill: ARMOR_COLOR[i], stroke: "var(--surface-1)", "stroke-width": 2 }));
     });
   }
-  box.replaceChildren(el("table", {}, el("thead", {}, head), body));
+
+  // Hover: crosshair and every armor level's values at that speed. Drag: zoom into a speed range.
+  const cross = svg("line", { y1: M.t, y2: H - M.b, stroke: "var(--text-muted)", visibility: "hidden" });
+  const brush = svg("rect", { y: M.t, height: H - M.t - M.b, fill: "var(--brush)", visibility: "hidden" });
+  const hit = svg("rect", { x: M.l, y: M.t, width: W - M.l - M.r, height: H - M.t - M.b, fill: "transparent", style: "cursor: crosshair" });
+  root.append(cross, brush, hit);
+  const tip = el("div", { class: "tooltip", hidden: "" });
+  const speedAt = ev => {
+    const r = root.getBoundingClientRect();
+    const px = (ev.clientX - r.left) * W / r.width;
+    return Math.max(from, Math.min(to, from + (px - M.l) / (W - M.l - M.r) * span));
+  };
+  let dragFrom = null;
+  hit.addEventListener("pointerdown", ev => { dragFrom = speedAt(ev); hit.setPointerCapture(ev.pointerId); });
+  hit.addEventListener("pointermove", ev => {
+    const v = speedAt(ev);
+    if (dragFrom !== null) {
+      const a = Math.min(dragFrom, v), b = Math.max(dragFrom, v);
+      brush.setAttribute("x", x(a)); brush.setAttribute("width", x(b) - x(a)); brush.setAttribute("visibility", "visible");
+    }
+    const res = span > 5 ? 4 : 20;
+    const vs = Math.round(v * res) / res;
+    cross.setAttribute("x1", x(vs)); cross.setAttribute("x2", x(vs)); cross.setAttribute("visibility", "visible");
+    tip.replaceChildren(el("div", { text: `${fmt(vs)} m/s, ${state.part} hit` }));
+    ARMORS.slice().reverse().forEach(armor => {
+      const i = ARMORS.indexOf(armor), d = damage(lo, vs, armor);
+      tip.append(el("div", { class: "row" }, swatch(ARMOR_COLOR[i], false),
+        el("span", { text: `armor ${armor}:` }), el("b", { text: Math.round(d.mod) }),
+        el("span", { class: "muted", text: `vanilla ${Math.round(d.vanilla)}` })));
+    });
+    tip.hidden = false;
+    const cr = chart.getBoundingClientRect();
+    const left = ev.clientX - cr.left + 14;
+    tip.style.left = (left + tip.offsetWidth > cr.width ? ev.clientX - cr.left - tip.offsetWidth - 14 : left) + "px";
+    tip.style.top = Math.max(0, ev.clientY - cr.top - tip.offsetHeight / 2) + "px";
+  });
+  hit.addEventListener("pointerup", ev => {
+    const v = speedAt(ev);
+    const start = dragFrom;
+    dragFrom = null;
+    brush.setAttribute("visibility", "hidden");
+    if (start !== null && Math.abs(v - start) > span / 40) {
+      g.zoom = [Math.min(start, v), Math.max(start, v)];
+      render();
+    }
+  });
+  hit.addEventListener("pointerleave", () => { cross.setAttribute("visibility", "hidden"); tip.hidden = true; });
+  hit.addEventListener("dblclick", () => { if (g.zoom) { g.zoom = null; render(); } });
+  chart.append(root, tip);
+  const zoomNote = el("div", { class: "zoom-note" });
+  if (g.zoom) {
+    zoomNote.append(`Zoomed: ${fmt(from)}–${fmt(to)} m/s`,
+      el("button", { class: "ghost", type: "button", text: "Reset zoom", onclick: () => { g.zoom = null; render(); } }));
+  } else {
+    zoomNote.append("Drag across the graph to zoom in.");
+  }
+  chart.append(zoomNote);
+
+  // Legend: one curve per line, with its damage at the horse's top speed.
+  const legend = el("div", { class: "legend" });
+  legend.append(el("div", { class: "head", text: `At top speed (${fmt(horse.top_speed)} m/s), ${state.part} hit:` }));
+  ARMORS.slice().reverse().forEach(armor => {
+    const i = ARMORS.indexOf(armor), d = damage(lo, horse.top_speed, armor);
+    legend.append(el("div", { class: "row" }, swatch(ARMOR_COLOR[i], true), el("span", { text: `armor ${armor}` }),
+      el("span", { class: "v" }, `${Math.round(d.mod)} `, el("span", { class: "van", text: `(${Math.round(d.vanilla)})` }))));
+  });
+  legend.append(el("div", { class: "key" },
+    el("span", {}, swatch("var(--text-secondary)", false), "MPBalancer"),
+    el("span", {}, swatch("var(--text-secondary)", false, true), "vanilla (in brackets)")));
+  body.append(chart, legend);
+  card.append(body);
+  return card;
 }
 
-function renderNote() {
-  const notes = [`Damage values are ${state.part} hits on ${state.target === "horse" ? "a horse" : "a player"}` +
-    (state.vanilla ? "; vanilla in brackets in the table" : "") + "."];
-  if (state.target === "horse") notes.push(`Thrusts on horses get ×${DATA.thrust_horse} on top of the curve (never above vanilla). Horse armor is its barding: none 0, half barding 15–20, full barding 25–28.`);
-  notes.push("Weapons with a changed base damage (+N) compare with the vanilla weapon, so they can beat vanilla at low speed.");
-  document.getElementById("note").textContent = notes.join(" ");
+function swatch(color, both, dashed = false) {
+  const s = svg("svg", { width: both ? 36 : 22, height: 10 });
+  if (both) {
+    s.append(svg("line", { x1: 0, x2: 16, y1: 5, y2: 5, stroke: color, "stroke-width": 2.5, "stroke-linecap": "round" }));
+    s.append(svg("line", { x1: 20, x2: 36, y1: 5, y2: 5, stroke: color, "stroke-width": 1.5, "stroke-dasharray": "4 3" }));
+  } else {
+    s.append(svg("line", { x1: 0, x2: 22, y1: 5, y2: 5, stroke: color, "stroke-width": dashed ? 1.5 : 2.5, "stroke-dasharray": dashed ? "4 3" : "none" }));
+  }
+  return s;
 }
 
-function update() { renderPickers(); renderLegend(); renderPanels(); renderTable(); renderNote(); }
-
-// ---- Controls -----------------------------------------------------------------------------------------------------
-function chipGroup(attr, key) {
-  document.querySelectorAll(`[data-${attr}]`).forEach(b => b.addEventListener("click", () => {
-    state[key] = b.dataset[attr];
-    document.querySelectorAll(`[data-${attr}]`).forEach(o => o.setAttribute("aria-pressed", o === b));
-    update();
-  }));
-}
-function toggle(id, key) {
-  const b = document.getElementById(id);
-  b.addEventListener("click", () => { state[key] = !state[key]; b.setAttribute("aria-pressed", state[key]); update(); });
+function render() {
+  const box = document.getElementById("graphs");
+  const yFull = yTop(state.graphs);
+  box.replaceChildren(...state.graphs.map((g, n) => renderGraph(g, n, yFull)));
+  document.getElementById("add").disabled = state.graphs.length >= MAX_GRAPHS;
 }
 
+// ---- Controls ---------------------------------------------------------------------------------------------------------
 function showTab(b) {
   document.querySelectorAll("nav.tabs button").forEach(o => o.setAttribute("aria-selected", o === b));
   document.querySelectorAll("main > section").forEach(s => s.hidden = s.id !== b.dataset.tab);
-  history.replaceState(null, "", b.dataset.tab === "explorer-tab" ? "#explorer" : "#");
+  history.replaceState(null, "", b.dataset.tab === "explorer-tab" ? "#explorer" : location.pathname);
 }
 document.querySelectorAll("nav.tabs button").forEach(b => b.addEventListener("click", () => showTab(b)));
-// #explorer links straight to the chart.
 if (location.hash === "#explorer") showTab(document.querySelector('[data-tab="explorer-tab"]'));
+
+document.querySelectorAll("[data-part]").forEach(b => b.addEventListener("click", () => {
+  state.part = b.dataset.part;
+  document.querySelectorAll("[data-part]").forEach(o => o.setAttribute("aria-pressed", o === b));
+  render();
+}));
+document.getElementById("add").addEventListener("click", () => {
+  if (state.graphs.length >= MAX_GRAPHS) return;
+  state.graphs.push(newGraph(DATA.classes[0].name));
+  render();
+});
 document.getElementById("theme").addEventListener("click", () => {
   const root = document.documentElement;
   const dark = root.dataset.theme ? root.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
@@ -457,29 +462,28 @@ document.getElementById("theme").addEventListener("click", () => {
   document.getElementById("theme").textContent = dark ? "Dark mode" : "Light mode";
 });
 
+// A graph for a class, with the named perks picked (the others at their default, the first of their list).
+function newGraph(className, perkNames = []) {
+  const cls = Math.max(0, DATA.classes.findIndex(c => c.name === className));
+  const perks = DATA.classes[cls].perk_lists.map(list => Math.max(0, list.findIndex(p => perkNames.includes(p.name))));
+  return { cls, perks, weapon: null, zoom: null };
+}
+
 (async () => {
   const [data, changelog] = await Promise.all([fetch("data.json").then(r => r.json()), fetch("changelog.html").then(r => r.text())]);
   DATA = data;
   document.getElementById("changelog").innerHTML = changelog;
-  const armorBox = document.getElementById("armors");
-  ARMORS.forEach(a => {
-    const b = el("button", { class: "chip", "aria-pressed": state.armors.has(a), text: a, onclick: () => {
-      state.armors.has(a) ? state.armors.delete(a) : state.armors.add(a);
-      b.setAttribute("aria-pressed", state.armors.has(a)); update();
-    } });
-    armorBox.append(b);
-  });
-  chipGroup("target", "target");
-  chipGroup("part", "part");
-  toggle("show-vanilla", "vanilla");
-  toggle("show-table", "table");
-  // Start with the strongest lance and a cavalry spear, on their default horses.
-  for (const id of ["mp_aserai_heavy_lance", "mp_western_cavalry_spear"]) {
-    if (DATA.weapons[id]) state.picks.push({ weapon: id, setup: setupsFor(id)[0][1] });
+  // Start with two heavy lancers and two light cavalry spears.
+  state.graphs = [
+    newGraph("Aserai heavy cavalry", ["Lancer"]),
+    newGraph("Vlandia heavy cavalry", ["Lancer"]),
+    newGraph("Battania light cavalry", ["Line Breaker"]),
+    newGraph("Empire light cavalry", ["Cavalry Spear"]),
+  ];
+  if (matchMedia("(prefers-color-scheme: dark)").matches && !document.documentElement.dataset.theme) {
+    document.getElementById("theme").textContent = "Light mode";
   }
-  if (!state.picks.length) { const id = Object.keys(DATA.weapons)[0]; state.picks.push({ weapon: id, setup: setupsFor(id)[0][1] }); }
-  if (matchMedia("(prefers-color-scheme: dark)").matches) document.getElementById("theme").textContent = "Light mode";
-  update();
+  render();
 })();
 </script>
 </body>

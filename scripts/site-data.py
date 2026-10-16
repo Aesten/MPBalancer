@@ -9,12 +9,11 @@ Reads:
   reports/data/weapons-v1.4.8.csv          each weapon usage's listed thrust damage and thrust speed (local export)
   ../_BannerlordDecompiled/ModuleData/...  the game's classes, perks, characters and items (GAME_DATA overrides)
 
-For every cavalry class it enumerates the perk choices players can spawn with (one perk per perk list) and keeps the
-distinct (weapon, speed bonus perks, horse) setups for its spears and lances; the page computes the damage from them
-with the same model as the mod (docs/mod-damage.md). Run it again after changing defaults.txt or the changelog.
+It exports every cavalry class with its default equipment and perk lists; the page works out the loadout from the
+perks picked (like the class selection screen) and computes the damage with the same model as the mod
+(docs/mod-damage.md). Run it again after changing defaults.txt or the changelog.
 """
 import csv
-import itertools
 import json
 import math
 import os
@@ -79,14 +78,17 @@ def main():
         v = (int(h.get("speed")) + 1) * 0.22 * (1 + RIDING * 0.0032) * horse_speed
         return round(knee + (cap - knee) * math.tanh((v - knee) / (cap - knee)) if v > knee else v, 2)
 
-    weapons, horses, setups = {}, {}, []
+    # Every cavalry class as the game defines it: default equipment, and its perk lists (players pick one perk per
+    # list, the first by default). The page works out the loadout from the picks, like the class selection screen.
+    weapons, horses, classes = {}, {}, []
     for c in ET.parse(os.path.join(GAME_DATA, "mpclassdivisions.xml")).getroot().iter("MPClassDivision"):
         cid = c.get("id")
         if "cavalry" not in cid:
             continue
         parts = cid.split("_")
-        cls = FACTION.get(parts[-1], parts[-1]) + " " + ("heavy" if parts[1] == "heavy" else "light") + " cavalry"
+        name = FACTION.get(parts[-1], parts[-1]) + " " + ("heavy" if parts[1] == "heavy" else "light") + " cavalry"
         base = {e.get("slot"): e.get("id", "").replace("Item.", "") for e in chars[c.get("hero")].iter("equipment")}
+        base = {k: v for k, v in base.items() if k in ("Item0", "Item1", "Item2", "Item3", "Horse")}
         lists = {}
         for p in c.iter("Perk"):
             mode = p.get("game_mode", "all")
@@ -94,38 +96,24 @@ def main():
                 continue
             perk = {"name": plain_name(p), "equip": {}, "speed": 0.0}
             for e in p.iter("OnSpawnEffect"):
-                if e.get("type") == "AlternativeEquipmentOnSpawn" and e.get("item") and e.get("target") in (None, "Any", "Player"):
+                if e.get("type") == "AlternativeEquipmentOnSpawn" and e.get("item") and e.get("target") in (None, "Any", "Player")                         and e.get("slot") in ("Item0", "Item1", "Item2", "Item3", "Horse"):
                     perk["equip"][e.get("slot")] = e.get("item")
             for e in p.iter("Effect"):
                 # Speed bonus perks that apply to mounted melee pierce thrusts (Lancer, Line Breaker, Ride Like the Wind).
-                if e.get("type") == "SpeedBonus" and e.get("hit_type") in (None, "Melee") \
-                        and e.get("damage_type") in (None, "Pierce"):
+                if e.get("type") == "SpeedBonus" and e.get("hit_type") in (None, "Melee")                         and e.get("damage_type") in (None, "Pierce"):
                     perk["speed"] += float(e.get("value"))
-            lists.setdefault(p.get("perk_list"), []).append(perk)
-        seen = set()
-        for combo in itertools.product(*[lists[k] for k in sorted(lists)]):
-            equip = dict(base)
-            for perk in combo:
-                equip.update(perk["equip"])
-            speed = sum(p["speed"] for p in combo)
-            horse = equip.get("Horse")
-            for slot in ("Item0", "Item1", "Item2", "Item3"):
-                w = equip.get(slot)
-                if w not in usages or horse not in items:
-                    continue
-                key = (w, speed, horse)
-                if key in seen:
-                    continue
-                seen.add(key)
-                # Name the perks that matter for this setup: the one giving the weapon, speed perks, the horse's.
-                relevant = [p["name"] for p in combo
-                            if p["speed"] > 0 or p["equip"].get(slot) == w or p["equip"].get("Horse") == horse]
-                setups.append({"class": cls, "weapon": w, "speed_bonus": speed, "horse": horse,
-                               "perks": relevant})
-                horses[horse] = {"name": plain_name(items[horse]), "top_speed": top_speed(horse)}
-                r = usages[w]
-                weapons[w] = {"name": r["name"], "lance": w in lances, "grip": r["weapon_class"],
-                              "listed": int(r["thrust_damage"]), "thrust_speed": int(r["thrust_speed"])}
+            lists.setdefault(int(p.get("perk_list")), []).append(perk)
+        reachable = set(base.values()) | {i for ps in lists.values() for p in ps for i in p["equip"].values()}
+        if not reachable & set(usages):
+            continue  # no spear or lance in any loadout
+        for item in reachable:
+            if item in usages:
+                r = usages[item]
+                weapons[item] = {"name": r["name"], "lance": item in lances, "grip": r["weapon_class"],
+                                 "listed": int(r["thrust_damage"]), "thrust_speed": int(r["thrust_speed"])}
+            elif item in items and items[item].find(".//Horse") is not None:
+                horses[item] = {"name": plain_name(items[item]), "top_speed": top_speed(item)}
+        classes.append({"id": cid, "name": name, "base": base, "perk_lists": [lists[k] for k in sorted(lists)]})
 
     buffs = table(d.get("thrust_damage", "none"))
     for w, info in weapons.items():
@@ -137,11 +125,10 @@ def main():
     data = {
         "curves": {"spear": curve("thrust_curve_spear"), "lance": curve("thrust_curve_lance"),
                    "foot": curve("thrust_curve_foot")},
-        "thrust_horse": float(d["thrust_horse"]),
         "weapon_mult": table(d.get("weapon_mult", "none")),
-        "weapons": dict(sorted(weapons.items(), key=lambda kv: (not kv[1]["lance"], kv[1]["name"]))),
+        "weapons": weapons,
         "horses": horses,
-        "setups": sorted(setups, key=lambda s: (weapons[s["weapon"]]["name"], s["class"], horses[s["horse"]]["top_speed"])),
+        "classes": sorted(classes, key=lambda c: c["name"]),
     }
     os.makedirs(SITE, exist_ok=True)
     with open(os.path.join(SITE, "data.json"), "w", encoding="utf-8", newline="\n") as f:
@@ -157,8 +144,8 @@ def main():
     html = markdown.markdown("\n".join(fixed), extensions=["tables"])
     with open(os.path.join(SITE, "changelog.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(html + "\n")
-    print("Wrote site/data.json (%d weapons, %d setups, %d horses) and site/changelog.html"
-          % (len(weapons), len(setups), len(horses)))
+    print("Wrote site/data.json (%d classes, %d weapons, %d horses) and site/changelog.html"
+          % (len(classes), len(weapons), len(horses)))
 
 
 if __name__ == "__main__":
